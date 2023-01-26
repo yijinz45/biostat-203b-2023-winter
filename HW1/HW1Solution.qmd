@@ -95,12 +95,12 @@ ls -l ~/mimic/icu
 **Solution:** These are the command used on the compressed file. 
 (zcat, zless, zmore, and zgrep) equals (cat, less, more, and grep)
 
-zcat uncompresses either a list of files on the command line or its standard input and writes the uncompressed data on standard output.
+'zcat' uncompresses either a list of files on the command line or its standard input and writes the uncompressed data on standard output.
 
-zless and zmore  are filters which allows examination of compressed or plain text files one screenful at a time on a soft-copy terminal.
+'zless' and zmore  are filters which allows examination of compressed or plain text files one screenful at a time on a soft-copy terminal.
 (The less is more powerful than more.) 
 
-zgrep command is used to search out expressions from a given a file even if it is compressed.
+'zgrep' command is used to search out expressions from a given a file even if it is compressed.
 
 4. What's the output of the following bash script?
 ```{bash}
@@ -116,14 +116,49 @@ Display the number of lines in each data file using a similar loop.
 
 ```{bash}
 for datafile in ~/mimic/core/*gz
-do
-  ls -l $datafile 
-done
+  do
+  ls $datafile
+  zless $datafile | wc -l 
+  done
 ```
+**Sollution: ** : 523741 in admissions.csv.gz,   382279 in patients.csv.gz,  2189536, transfers.csv.gz. 
 
 5. Display the first few lines of `admissions.csv.gz`. How many rows are in this data file? How many unique patients (identified by `subject_id`) are in this data file? (Hint: combine Linux commands `zcat`, `head`/`tail`, `awk`, `sort`, `uniq`, `wc`, and so on.)
 
+
+**Display the first few lines of `admissions.csv.gz`.**
+
+```{bash}
+zless /Users/Aoki/mimic/core/admissions.csv.gz | head -10
+
+```
+**Sollution: ** The first 10 rows displayed  by the commandabove
+
+**How many rows are in this data file?**
+
+**Show the first lines of the data**
+```{bash}
+gzcat /Users/Aoki/mimic/core/admissions.csv.gz | head -3
+```
+**Show the last lines of the data**
+```{bash}
+gzcat /Users/Aoki/mimic/core/admissions.csv.gz | tail -3
+```
+Based on the result we know that the first line is the name of the variables and start from the second line, each line is a patient.  
+
+```{bash}
+gzcat /Users/Aoki/mimic/core/admissions.csv.gz | wc -l 
+```
+
+
+**Sollution: ** 
+
+
+
+
 6. What are the possible values taken by each of the variable `admission_type`, `admission_location`, `insurance`, and `ethnicity`? Also report the count for each unique value of these variables. (Hint: combine Linux commands `zcat`, `head`/`tail`, `awk`, `uniq -c`, `wc`, and so on.)
+
+
 
 ## Q4. Who's popular in Price and Prejudice
 
