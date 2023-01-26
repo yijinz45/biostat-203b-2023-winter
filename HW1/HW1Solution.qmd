@@ -90,7 +90,6 @@ ls -l ~/mimic/icu
 
 **Solution:** The "csv.gz" files are a compressed form of the cvs file. The CSV.GZ is a CSV file compressed with gzip utility. Unzip the compressed file will generate the csv files. The CSV file is the file in which information is separated by commas.
 
-
 3. Briefly describe what bash commands `zcat`, `zless`, `zmore`, and `zgrep` do.
 
 **Solution:** These are the command used on the compressed file. 
@@ -111,7 +110,16 @@ do
   ls -l $datafile
 done
 ```
+**Sollution** It finds out all the datafiles in the folder "~/mimic/core/" that ends with a name of "gz" and print the names and information of them out one by one, as a long format with it "ls" information results.
+
 Display the number of lines in each data file using a similar loop.
+
+```{bash}
+for datafile in ~/mimic/core/*gz
+do
+  ls -l $datafile 
+done
+```
 
 5. Display the first few lines of `admissions.csv.gz`. How many rows are in this data file? How many unique patients (identified by `subject_id`) are in this data file? (Hint: combine Linux commands `zcat`, `head`/`tail`, `awk`, `sort`, `uniq`, `wc`, and so on.)
 
