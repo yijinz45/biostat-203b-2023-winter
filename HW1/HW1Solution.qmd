@@ -110,7 +110,7 @@ do
   ls -l $datafile
 done
 ```
-**Sollution** It finds out all the datafiles in the folder "~/mimic/core/" that ends with a name of "gz" and print the names and information of them out one by one, as a long format with it "ls" information results.
+**Solution** It finds out all the datafiles in the folder "~/mimic/core/" that ends with a name of "gz" and print the names and information of them out one by one, as a long format with it "ls" information results.
 
 Display the number of lines in each data file using a similar loop.
 
@@ -121,7 +121,7 @@ for datafile in ~/mimic/core/*gz
   zless $datafile | wc -l 
   done
 ```
-**Sollution: ** : 523741 in admissions.csv.gz,   382279 in patients.csv.gz,  2189536, transfers.csv.gz. 
+**Solution: ** : 523741 in admissions.csv.gz,   382279 in patients.csv.gz,  2189536, transfers.csv.gz. 
 
 5. Display the first few lines of `admissions.csv.gz`. How many rows are in this data file? How many unique patients (identified by `subject_id`) are in this data file? (Hint: combine Linux commands `zcat`, `head`/`tail`, `awk`, `sort`, `uniq`, `wc`, and so on.)
 
@@ -129,36 +129,69 @@ for datafile in ~/mimic/core/*gz
 **Display the first few lines of `admissions.csv.gz`.**
 
 ```{bash}
-zless /Users/Aoki/mimic/core/admissions.csv.gz | head -10
-
+zless ~/mimic/core/admissions.csv.gz | head -10
 ```
-**Sollution: ** The first 10 rows displayed  by the commandabove
+**Solution: ** The first 10 rows displayed  by the command above
 
 **How many rows are in this data file?**
 
-**Show the first lines of the data**
+*-Show the first lines of the data*
 ```{bash}
-gzcat /Users/Aoki/mimic/core/admissions.csv.gz | head -3
+gzcat ~/mimic/core/admissions.csv.gz | head -3
 ```
-**Show the last lines of the data**
+**-Show the last lines of the data**
 ```{bash}
-gzcat /Users/Aoki/mimic/core/admissions.csv.gz | tail -3
-```
-Based on the result we know that the first line is the name of the variables and start from the second line, each line is a patient.  
-
-```{bash}
-gzcat /Users/Aoki/mimic/core/admissions.csv.gz | wc -l 
+gzcat ~/mimic/core/admissions.csv.gz | tail -3
 ```
 
 
-**Sollution: ** 
+**Findings: ** Based on the result we know that the first line is the name of the variables and start from the second line, each line is a patient.  
+We use the awk command to ignore the first row and use the we -l to count the number of the lines which could represent the number of the rows. 
+```{bash}
+gzcat ~/mimic/core/admissions.csv.gz | awk  '  NR > 1  ' | wc -l 
+```
 
 
+**Solution:**  There are 523740 rows in this file
+
+**How many unique patients (identified by `subject_id`) are in this data file?**
+
+```{bash}
+gzcat ~/mimic/core/admissions.csv.gz | \
+awk -F , ' NR > 1 { print $1 } ' | sort -u | uniq -c | wc -l
+```
+
+**Solution: **  There are 256878 unique patients in this file
 
 
 6. What are the possible values taken by each of the variable `admission_type`, `admission_location`, `insurance`, and `ethnicity`? Also report the count for each unique value of these variables. (Hint: combine Linux commands `zcat`, `head`/`tail`, `awk`, `uniq -c`, `wc`, and so on.)
 
+6.1: admission-type
 
+```{bash}
+gzcat ~/mimic/core/admissions.csv.gz | \
+awk -F , ' NR > 1 { print $6 } ' | sort | uniq -c 
+```
+6.2: admission_location
+
+```{bash}
+gzcat ~/mimic/core/admissions.csv.gz | \
+awk -F , ' NR > 1 { print $7 } ' | sort | uniq -c 
+```
+
+6.3 insurance
+
+```{bash}
+gzcat ~/mimic/core/admissions.csv.gz | \
+awk -F , ' NR > 1 { print $9 } ' | sort | uniq -c 
+```
+
+6.4 ethnicity
+
+```{bash}
+gzcat ~/mimic/core/admissions.csv.gz | \
+awk -F , ' NR > 1 { print $12 } ' | sort | uniq -c 
+```
 
 ## Q4. Who's popular in Price and Prejudice
 
