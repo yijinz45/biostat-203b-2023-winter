@@ -55,24 +55,53 @@ sessionInfo()
 
 This exercise (and later in this course) uses the [MIMIC-IV data](https://mimic-iv.mit.edu), a freely accessible critical care database developed by the MIT Lab for Computational Physiology. Follow the instructions at <https://mimic.mit.edu/docs/gettingstarted/> to (1) complete the CITI `Data or Specimens Only Research` course and (2) obtain the PhysioNet credential for using the MIMIC-IV data. Display the verification links to your completion report and completion certificate here. (Hint: The CITI training takes a couple hours and the PhysioNet credentialing takes a couple days; do not leave it to the last minute.)
 
-**Link to the completion report : ** <>
+**Link to the completion report : ** <https://www.citiprogram.org/verify/?kdcd09fb1-e73c-4d63-8b57-3c29998c7c9b-53914118>
 
-**Link to the completion report : ** <>
+**Link to the completion certificate : ** <https://www.citiprogram.org/verify/?wfb1ae954-1f90-4467-ae24-19d609bb57b6-53914118>
 
 ## Q3. Linux Shell Commands
 
 1. The `~/mimic` folder within the Docker container contains data sets from MIMIC-IV. Refer to the documentation <https://mimic.mit.edu/docs/iv/> for details of data files.  
 ```{bash}
-#| eval: false
 ls -l ~/mimic
+```
+```{bash}
+#show files in the mimic folder
+ls ~/mimic
 ```
 Please, do **not** put these data files into Git; they are big. Do **not** copy them into your directory. Do **not** decompress the gz data files. These create unnecessary big files on storage and are not big data friendly practices. Just read from the data folder `~/mimic` directly in following exercises. 
 
-  Use Bash commands to answer following questions.
+ Use Bash commands to answer following questions.
+  
 
 2. Display the contents in the folders `core`, `hosp`, `icu`. Why are these data files distributed as `.csv.gz` files instead of `.csv` (comma separated values) files? Read the page <https://mimic.mit.edu/docs/iv/> to understand what's in each folder.
 
+```{bash}
+ls -l ~/mimic/core
+```
+
+```{bash}
+ls -l ~/mimic/hosp
+```
+
+```{bash}
+ls -l ~/mimic/icu
+```
+
+**Solution:** The "csv.gz" files are a compressed form of the cvs file. The CSV.GZ is a CSV file compressed with gzip utility. Unzip the compressed file will generate the csv files. The CSV file is the file in which information is separated by commas.
+
+
 3. Briefly describe what bash commands `zcat`, `zless`, `zmore`, and `zgrep` do.
+
+**Solution:** These are the command used on the compressed file. 
+(zcat, zless, zmore, and zgrep) equals (cat, less, more, and grep)
+
+zcat uncompresses either a list of files on the command line or its standard input and writes the uncompressed data on standard output.
+
+zless and zmore  are filters which allows examination of compressed or plain text files one screenful at a time on a soft-copy terminal.
+(The less is more powerful than more.) 
+
+zgrep command is used to search out expressions from a given a file even if it is compressed.
 
 4. What's the output of the following bash script?
 ```{bash}
