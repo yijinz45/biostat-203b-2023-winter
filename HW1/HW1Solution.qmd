@@ -63,16 +63,18 @@ This exercise (and later in this course) uses the [MIMIC-IV data](https://mimic-
 
 1. The `~/mimic` folder within the Docker container contains data sets from MIMIC-IV. Refer to the documentation <https://mimic.mit.edu/docs/iv/> for details of data files.  
 ```{bash}
-ls -l ~/mimic
+ls -l ~/mimic 
 ```
+
 ```{bash}
-#show files in the mimic folder
-ls ~/mimic
+ls  ~/mimic 
 ```
+
 Please, do **not** put these data files into Git; they are big. Do **not** copy them into your directory. Do **not** decompress the gz data files. These create unnecessary big files on storage and are not big data friendly practices. Just read from the data folder `~/mimic` directly in following exercises. 
 
- Use Bash commands to answer following questions.
-  
+Use Bash commands to answer following questions.
+
+**Solution: ** Done  
 
 2. Display the contents in the folders `core`, `hosp`, `icu`. Why are these data files distributed as `.csv.gz` files instead of `.csv` (comma separated values) files? Read the page <https://mimic.mit.edu/docs/iv/> to understand what's in each folder.
 
@@ -166,27 +168,27 @@ awk -F , ' NR > 1 { print $1 } ' | sort -u | uniq -c | wc -l
 
 6. What are the possible values taken by each of the variable `admission_type`, `admission_location`, `insurance`, and `ethnicity`? Also report the count for each unique value of these variables. (Hint: combine Linux commands `zcat`, `head`/`tail`, `awk`, `uniq -c`, `wc`, and so on.)
 
-6.1: admission-type
+**6.1: admission-type**
 
 ```{bash}
 gzcat ~/mimic/core/admissions.csv.gz | \
 awk -F , ' NR > 1 { print $6 } ' | sort | uniq -c 
 ```
-6.2: admission_location
+**6.2: admission_location**
 
 ```{bash}
 gzcat ~/mimic/core/admissions.csv.gz | \
 awk -F , ' NR > 1 { print $7 } ' | sort | uniq -c 
 ```
 
-6.3 insurance
+**6.3 insurance**
 
 ```{bash}
 gzcat ~/mimic/core/admissions.csv.gz | \
 awk -F , ' NR > 1 { print $9 } ' | sort | uniq -c 
 ```
 
-6.4 ethnicity
+**6.4 ethnicity**
 
 ```{bash}
 gzcat ~/mimic/core/admissions.csv.gz | \
