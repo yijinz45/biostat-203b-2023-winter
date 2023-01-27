@@ -63,11 +63,7 @@ This exercise (and later in this course) uses the [MIMIC-IV data](https://mimic-
 
 1. The `~/mimic` folder within the Docker container contains data sets from MIMIC-IV. Refer to the documentation <https://mimic.mit.edu/docs/iv/> for details of data files.  
 ```{bash}
-ls -l ~/mimic 
-```
-
-```{bash}
-ls  ~/mimic 
+ls -l ~/mimic/ 
 ```
 
 Please, do **not** put these data files into Git; they are big. Do **not** copy them into your directory. Do **not** decompress the gz data files. These create unnecessary big files on storage and are not big data friendly practices. Just read from the data folder `~/mimic` directly in following exercises. 
