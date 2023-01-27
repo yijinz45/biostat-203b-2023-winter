@@ -199,7 +199,7 @@ awk -F , ' NR > 1 { print $12 } ' | sort | uniq -c
 curl -L -O  http://www.gutenberg.org/cache/epub/42671/pg42671.txt
 ```
 
-**Done**
+**Solution: ** Done
 
 Explain what `wget -nc` does. Do **not** put this text file `pg42671.txt` in Git. Complete the following loop to tabulate the number of times each of the four characters is mentioned using Linux commands.
 ```{bash}
@@ -264,7 +264,7 @@ Explain the output. Explain the meaning of `"$1"`, `"$2"`, and `"$3"` in this sh
 
 **Explain the output.**
 
-**Solution** The out put means the last 5 rows of the first 20 rows 
+**Solution :** The out put means the last 5 rows of the first 20 rows 
 (15-20 rows) of the pg42671.txt file.
 In the string: "pg42671.txt 20 5", 
 $1 is the pg42671.txt. 
@@ -272,7 +272,7 @@ $2 is 20, and $3 is 5.
 
 **Why do we need the first line of the shell script?**
 
-**Solution** The first line is used to identify the shell to execute.
+**Solution :** The first line is used to identify the shell to execute.
 
 ## Q5. More fun with Linux
 
