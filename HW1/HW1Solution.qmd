@@ -120,7 +120,7 @@ Display the number of lines in each data file using a similar loop.
 for datafile in ~/mimic/core/*gz
   do
   ls $datafile
-  zless $datafile | wc -l 
+  gzcat $datafile | wc -l 
   done
 ```
 **Solution: ** : 523741 in admissions.csv.gz,   382279 in patients.csv.gz,  2189536, transfers.csv.gz. 
@@ -131,7 +131,7 @@ for datafile in ~/mimic/core/*gz
 **Display the first few lines of `admissions.csv.gz`.**
 
 ```{bash}
-zless ~/mimic/core/admissions.csv.gz | head -10
+gzcat ~/mimic/core/admissions.csv.gz | head -10
 ```
 **Solution: ** The first 10 rows displayed  by the command above
 
@@ -199,7 +199,7 @@ awk -F , ' NR > 1 { print $12 } ' | sort | uniq -c
 
 1. You and your friend just have finished reading *Pride and Prejudice* by Jane Austen. Among the four main characters in the book, Elizabeth, Jane, Lydia, and Darcy, your friend thinks that Darcy was the most mentioned. You, however, are certain it was Elizabeth. Obtain the full text of the novel from <http://www.gutenberg.org/cache/epub/42671/pg42671.txt> and save to your local folder. 
 ```{bash}
-#| eval: false
+#| eval: True
 curl -L -O  http://www.gutenberg.org/cache/epub/42671/pg42671.txt
 ```
 
@@ -207,14 +207,26 @@ curl -L -O  http://www.gutenberg.org/cache/epub/42671/pg42671.txt
 
 Explain what `wget -nc` does. Do **not** put this text file `pg42671.txt` in Git. Complete the following loop to tabulate the number of times each of the four characters is mentioned using Linux commands.
 ```{bash}
-#| eval: false
-wget -nc http://www.gutenberg.org/cache/epub/42671/pg42671.txt
+#| eval: True
+curl -L -O  http://www.gutenberg.org/cache/epub/42671/pg42671.txt
+
 for char in Elizabeth Jane Lydia Darcy
 do
   echo $char:
-  # some bash commands here
+  # match word ignoring cases
+  cat pg42671.txt | grep -o -i $char | wc -l 
 done
 ```
+
+**Explain what wget -nc does.**
+**Solution:** I am not using the wget to finish this quesiton. But based on the 
+curl which have a similar function with it. It is a command that downloads 
+source code and binaries, and retrieve an entire website or a specific hierarchy at once.
+**Solution:**
+Elizabeth is mentioned 634 times. 
+Jane 294 times. 
+Lydia 171 times.
+Darcy 418 times.
 
 2. What's the difference between the following two commands?
 ```{bash}
@@ -224,8 +236,14 @@ echo 'hello, world' > test1.txt
 and
 ```{bash}
 #| eval: false
-echo 'hello, world' >> test2.txt
+echo 'hello, world' >> test2.txt 
 ```
+
+**Solution**
+The first command use only one ">". It put the string  'hello, world'  into a txt file called: test1.txt.
+The second command have two ">" and are used to append the string we want at the end of the original file. 
+For the first file, no matter how much time you runit. You will get only one 'hello, world'  in the txt file.
+For the second file, the more time you run, the more 'hello, world' lines are appended to the file test2.txt. 
 
 3. Using your favorite text editor (e.g., `vi`), type the following and save the file as `middle.sh`:
 ```{bash eval=FALSE}
