@@ -248,12 +248,27 @@ For the second file, the more time you run, the more 'hello, world' lines are ap
 # Usage: bash middle.sh filename end_line num_lines
 head -n "$2" "$1" | tail -n "$3"
 ```
+
+
+
+
+**Solution**: Done
+
 Using `chmod` to make the file executable by the owner, and run
 ```{bash}
 #| eval: false
+chmod 700 ./middle.sh
 ./middle.sh pg42671.txt 20 5
 ```
 Explain the output. Explain the meaning of `"$1"`, `"$2"`, and `"$3"` in this shell script. Why do we need the first line of the shell script?
+
+**Explain the output.**
+**Solution** The out put means the last 5 rows of the first 20 rows 
+(15-20 rows) of the pg42671.txt file.
+In the string: pg42671.txt 20 5, $1 is the pg42671.txt, $2 is 20, and $3 is 5.
+
+**Explain the output.**
+**Solution** The first line is used to identify the shell to execute.
 
 ## Q5. More fun with Linux
 
