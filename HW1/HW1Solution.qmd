@@ -279,52 +279,52 @@ $2 is 20, and $3 is 5.
 Try following commands in Bash and interpret the results: `cal`, `cal 2021`, `cal 9 1752` (anything unusual?), `date`, `hostname`, `arch`, `uname -a`, `uptime`, `who am i`, `who`, `w`, `id`, `last | head`, `echo {con,pre}{sent,fer}{s,ed}`, `time sleep 5`, `history | tail`.
 
 
-```{Bash}
+```{bash}
 cal
 ```
 
-```{Bash}
+```{bash}
 cal 2021
 ```
 
-```{Bash}
+```{bash}
 cal 9 1752
 ```
 
-```{Bash}
+```{bash}
 date
 ```
 
 
-```{Bash}
-host name
+```{bash}
+hostname
 ```
 
-```{Bash}
+```{bash}
 arch
 ```
 
-```{Bash}
+```{bash}
 uname -a
 ```
 
-```{Bash}
+```{bash}
 uptime
 ```
 
-```{Bash}
+```{bash}
 who am i
 ```
 
-```{Bash}
+```{bash}
 who
 ```
 
-```{Bash}
+```{bash}
 w
 ```
 
-```{Bash}
+```{bash}
 id
 ```
 
