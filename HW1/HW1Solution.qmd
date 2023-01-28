@@ -283,63 +283,113 @@ Try following commands in Bash and interpret the results: `cal`, `cal 2021`, `ca
 cal
 ```
 
+**Solution: ** cal can see the calendar of a specific month or a whole year. The null of the cal cammand, will shows the month now. I think it is based on the systen time when the command is run.
+
 ```{bash}
 cal 2021
 ```
+
+**Solution** This command: cal + year will show the whole calendar of all months in this specfic year. 
 
 ```{bash}
 cal 9 1752
 ```
 
+**Solution** The cal command, is in the cal [ [ month ] year] syntax. 
+There are some missing dates. The reason is that the calendar switched from the Julian calendar to the Gregorian calendar, so we miss some dates during ths process. 
+
+
 ```{bash}
 date
 ```
 
+**Solution: ** The date command, will shows the system time . The result including the abbreviated day name, abbreviated month name, day of the month, the time separated by colons, the time zone name, and the year. 
 
 ```{bash}
 hostname
 ```
 
+**Solution: ** The hostname command in Linux displays the hostname of the server.
+
 ```{bash}
 arch
 ```
+
+
+**Solution: ** The arch command displays the architecture of the Linux machine.
 
 ```{bash}
 uname -a
 ```
 
+**Solution** The uname -a command displays all information on your system such as machine, hostname, and architecture name
+
 ```{bash}
 uptime
 ```
+
+**Solution** The uptime is a command that returns information about how long your system has been running together with the current time, number of users with running sessions, and the system load averages for the past 1, 5, and 15 minutes. 
 
 ```{bash}
 who am i
 ```
 
+
+**Solution: **The who am i command display the username of the current user when this command is invoked.
+
 ```{bash}
 who
 ```
+
+**Solution:** The who command is a tool print information about users who are currently logged in
 
 ```{bash}
 w
 ```
 
+**Solution:**The w command is a built-in tool that allows administrators to view information about users that are currently logged in.
+
 ```{bash}
 id
 ```
+
+**Solution:**Linux id command is used to print the genuine and effective user ID and group ID.
 
 ```{bash}
 last | head
 ```
 
+**Solution:** The last | head command displays the first 10 lines of the list of all the users logged in.
+
 ```{bash}
 echo {con,pre}{sent,fer}{s,ed}
 ```
+
+**Solution:** It displays the concatenate 3 fields into 8 different words with different conbinations. 
 
 ```{bash}
 time sleep 5
 ```
 
+**Solution:** Linux sleep command lets the terminal wait by the specified amount of time. By default, it takes time in seconds. But, we can set the delay time in minutes (m), hours (h), and days (d). It helps in pausing the execution of any particular command for a fixed amount of time. 
+
 ```{bash}
 history | tail
 ```
+
+**Solution:** The result is only work in the terminal. 
+These are the results from my terminal. 
+
+  311  nano
+  312  ls
+  313  cat middle.sh
+  314  man head
+  315  ls -al
+  316  chmod 700 #!/bin/sh
+  317  chmod 700 middle.sh
+  318  ls -al
+  319  history | tal
+  320  history | tail
+wifi-131-179-47-162:~ Aoki$ 
+
+
