@@ -53,19 +53,32 @@ system(str_c("ls -l ", mimic_path, "/icu"), intern = TRUE)
 There are quite a few utilities in R for reading plain text data files. Let us test the speed of reading a moderate sized compressed csv file, `admissions.csv.gz`, by three programs: `read.csv` in base R, `read_csv` in tidyverse, and `fread` in the popular data.table package. 
 
 ```{r}
-system.time(rbase<-read.csv(file="~/mimic/core/admissions.csv.gz"))
-system.time(rtidy<-read_csv("~/mimic/core/admissions.csv.gz"))
-system.time(rfread<-fread("~/mimic/core/admissions.csv.gz"))
+system.time(rbase <- read.csv(str_c(mimic_path, "/core/admissions.csv.gz")))
+system.time(rtidy <- read_csv(str_c(mimic_path,"/core/admissions.csv.gz")))
+system.time(rfread <- fread(str_c(mimic_path,"/core/admissions.csv.gz")))
 ```
 
 
 Which function is fastest? Is there difference in the (default) parsed data types? (Hint: R function `system.time` measures run times.)
-
-**Solution:**
-Based on the result, the The fread is the fasest function.
-The read_csv flat files into DataFrame. The read.csv() function import a CSV file into a DataFrame. fread() function returns you a data table:
-
+```{r}
+# thee str() function could check the data type of an entire dataframe.
+str(rbase)
+str(rtidy)
+str(rfread)
 ```
+
+**Q1 Solution:**
+Based on the result, the The fread is the fasest function. The read.csv is the 
+slowest. 
+Based on the result from the 'str' command, we can see some obvious differences
+in the (default) parsed data types? 
+For example: 'read.csv' command read the id number of the first two rows as int, 
+read the time and the qualitative data as chr. 
+The 'read_csv' command read the id number of the first two rows as num, read the 
+time as POSIXct, and read the qualitative data as char. 
+The 'fread' command read the id number of the first two rows as int and read the 
+time as int, and read the qualitative data as chr. 
+
 For later questions, we stick to the `read_csv` in tidyverse.
 
 ## Q2. ICU stays
@@ -82,13 +95,51 @@ system(
 )
 ```
 
+
 1. Import `icustatys.csv.gz` as a tibble `icustays_tble`. 
+
+```{r}
+icustays_tble<- read_csv(str_c(mimic_path,"/icu/icustays.csv.gz"))
+is.tibble(icustays_tble)
+```
+**Solution** 
+I used the 'read_csv' command to read the icu file into tibble and used the 'is.tibble' 
+command to check if it is a tibble. 
 
 2. How many unique `subject_id`? Can a `subject_id` have multiple ICU stays? 
 
+```{r}
+nrow(distinct(icustays_tble,subject_id))
+```
+**Solution** 
+Yes, based on the result from 'nrow' command above, we have 53150 numebrs of
+'Subject_id'. Since the original data of the 'icustays_tble' have 76540 observations, so a 'subject_id' can have multiple ICU stays.
+
 3. Summarize the number of ICU stays per `subject_id` by graphs. 
 
+```{r}
+plot_icu_stay <-icustays_tble %>% 
+  count(subject_id) %>%
+    count(n)
+  
+ggplot(data = plot_icu_stay) + 
+geom_col(mapping= aes(x =n , y = nn))+ xlim(0, 30)
+  
+
+```
+
 4. For each `subject_id`, let's only keep the first ICU stay in the tibble `icustays_tble`. (Hint: `slice_min` and `slice_max` may take long. Think alternative ways to achieve the same function.)
+
+```{r}
+icustays_tble1 <- icustays_tble %>%
+  arrange(subject_id, intime) %>%
+  distinct(subject_id, .keep_all = TRUE) 
+
+icustays_tble1
+```
+
+**Solution**
+Sort the data and then distinct so we will only havee the first ICU stay in tthe tibble. 
 
 ## Q3. `admission` data
 
