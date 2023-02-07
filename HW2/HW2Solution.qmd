@@ -139,7 +139,7 @@ icustays_tble1
 ```
 
 **Solution**
-Sort the data and then distinct so we will only havee the first ICU stay in tthe tibble. 
+Sort the data and then distinct so we will only have the first ICU stay in the tibble. 
 
 ## Q3. `admission` data
 
