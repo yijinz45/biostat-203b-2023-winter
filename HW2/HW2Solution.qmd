@@ -75,12 +75,12 @@ Which function is fastest? Is there difference in the (default) parsed
 data types? (Hint: R function `system.time` measures run times.)
 
 ```{r}
-# thee str() function could check the data type of an entire dataframe.
 str(rbase)
 str(rtidy)
 str(rfread)
 ```
-
+ The str() function could check the data type of an entire dataframe.
+ 
 **Q1 Solution:** Based on the result, the The fread is the fasest
 function. The read.csv is the slowest. Based on the result from the
 'str' command, we can see some obvious differences in the (default)
@@ -118,7 +118,7 @@ is_tibble(icustays_tble)
 ```
 
 **Solution:** I used the 'read_csv' command to read the icu file into
-tibble and used the 'is.tibble' command to check if it is a tibble.
+tibble and used the 'is_tibble' command to check if it is a tibble.
 
 2.  How many unique `subject_id`? Can a `subject_id` have multiple ICU
     stays?
@@ -154,10 +154,10 @@ I use the bar plot to show the repetitive number of ICU stays in each subject id
     long. Think alternative ways to achieve the same function.)
 
 ```{r}
-icustays_tble1 <- icustays_tble %>%
+icustays_tble <- icustays_tble %>%
   arrange(subject_id, intime) %>%
   distinct(subject_id, .keep_all = TRUE) 
-icustays_tble1
+icustays_tble
 ```
 
 **Solution:** Sort the data and then we use the distinct(.keep_all=TRUE) so we will only have the
@@ -173,7 +173,7 @@ each field in this file. The first 10 lines are
 ```{r}
 system(
   str_c(
-    "zcat < ", 
+    "gzcat < ", 
     str_c(mimic_path, "/core/admissions.csv.gz"), 
     " | head"
     ), 
@@ -183,8 +183,21 @@ system(
 
 1.  Import `admissions.csv.gz` as a tibble `admissions_tble`.
 
+```{r}
+admissions_tble<- read_csv(str_c(mimic_path,"/core/admissions.csv.gz"))
+is_tibble(admissions_tble)
+```
+**Solution:** I used the 'read_csv' command to read the icu file into
+tibble and used the 'is_tibble' command to check if it is a tibble.
+
 2.  Let's only keep the admissions that have a match in `icustays_tble`
     according to `subject_id` and `hadmi_id`.
+
+```{r}
+joinedsemi_join <-semi_join(admissions_tble,icustays_tble, by = c ("subject_id","hadm_id"))
+joinedsemi_join
+```
+
 
 3.  Summarize the following variables by graphics.
 
