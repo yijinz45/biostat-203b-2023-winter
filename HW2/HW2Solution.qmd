@@ -113,7 +113,7 @@ system(
 1.  Import `icustatys.csv.gz` as a tibble `icustays_tble`.
 
 ```{r}
-icustays_tble<- read_csv(str_c(mimic_path,"/icu/icustays.csv.gz"))
+icustays_tble <- read_csv(str_c(mimic_path,"/icu/icustays.csv.gz"))
 is_tibble(icustays_tble)
 ```
 
@@ -141,9 +141,9 @@ plot_icu_stay <- icustays_tble %>%
   count(subject_id) %>%
   count(n) 
 plot1 <- ggplot(data = plot_icu_stay) + 
-  geom_col(mapping= aes (x =n, y = nn, fill=nn)) + xlim(0, 40) + 
-  labs(x = "Number of subject ids with specific number of ICU stays", 
-       y = "Number of ICU stays per 'subject id") 
+  geom_col(mapping = aes (x =n, y = nn, fill = nn)) + xlim(0, 40) + 
+  labs(x = "Number of ICU stays per 'subject id.", 
+       y = " Number of subject ids with specific number of ICU stays") 
 plot1
 ```
 
@@ -184,7 +184,7 @@ system(
 1.  Import `admissions.csv.gz` as a tibble `admissions_tble`.
 
 ```{r}
-admissions_tble<- read_csv(str_c(mimic_path,"/core/admissions.csv.gz"))
+admissions_tble <- read_csv(str_c(mimic_path,"/core/admissions.csv.gz"))
 is_tibble(admissions_tble)
 ```
 **Solution:** I used the 'read_csv' command to read the icu file into
@@ -194,20 +194,106 @@ tibble and used the 'is_tibble' command to check if it is a tibble.
     according to `subject_id` and `hadmi_id`.
 
 ```{r}
-joinedsemi_join <-semi_join(admissions_tble,icustays_tble, by = c ("subject_id","hadm_id"))
-joinedsemi_join
+admissions_tble <- semi_join(admissions_tble,icustays_tble, 
+                            by = c ("subject_id","hadm_id"))
+admissions_tble
 ```
 
+**Solution:** I used the semi_join command to return the matched rows.
 
 3.  Summarize the following variables by graphics.
 
     -   admission year\
+    
+    
+```{r}
+
+admissions_tble <- admissions_tble %>%
+  mutate("admityear" = year(as_datetime(admittime)),
+         "admitmonth" = month(as_datetime(admittime)),
+         "admitmonthday" = mday(as_datetime(admittime)),
+         "admitweekday" = wday(as_datetime(admittime)),
+         "admithour" = hour(as_datetime(admittime)),
+         "admitmin" = minute(as_datetime(admittime)),
+         )
+admissions_tble
+```
+
+```{r}
+ggplot(data = admissions_tble) + 
+  geom_bar(fill="pink",mapping = aes(x = admityear)) + theme_light() +
+  labs(title = "Bar plot for the admission time by year",
+  x = "Admission year")
+```
+
     -   admission month\
+```{r}
+ggplot(data = admissions_tble) + 
+  geom_bar(fill = "pink",mapping = aes(x = admitmonth)) + theme_light() +
+  labs(title = "Bar plot for the admission time by month", 
+      x = "Admission month") 
+```
+
     -   admission month day\
+```{r}
+ggplot(data = admissions_tble) + 
+  geom_bar(fill = "pink", mapping = aes(x = admitmonthday)) + theme_light() +
+  labs(title = "Bar plot for the admission time by admit monthday", 
+      x = "Admit month day") 
+```
+
     -   admission week day\
+```{r}
+ggplot(data = admissions_tble) + 
+  geom_bar(fill = "pink", mapping = aes(x = admitweekday)) + theme_light() +
+  labs(title = "Bar plot for the admission time by admit weekday", 
+      x = "Admit weekday") 
+```
+
     -   admission hour (anything unusual?)\
+```{r}
+ggplot(data = admissions_tble) + 
+  geom_bar(fill = "pink", mapping = aes(x = admithour)) + theme_light() +
+  labs(title = "Bar plot for the admission time by admit hour", 
+      x = "Admit hour") 
+```
+
     -   admission minute (anything unusual?)\
+**Solution:**
+The unusually happens at 0 and 7 pm. I don' know the exact reason of it but we
+can guess that they might be the default admit time in the system in record system and the 
+open time of the hospital.
+
+```{r}
+ggplot(data = admissions_tble) + 
+  geom_bar(fill ="pink", mapping = aes(x = admitmin)) + theme_light() +
+  labs(title = "Bar plot for the admission time by admit mnuute", 
+      x = "Admit minute") 
+```
+**Solution**
+There are a more numbers of admission at minute 0, 15, 30, and 45. I think it 
+happends because the recorder are rounding other minutes into theses minutes.
+For example: record 14 as 15. 
+
     -   length of hospital stay (anything unusual?)
+    
+```{r}
+admissions_tble <- admissions_tble %>%
+  mutate( "lengthstay"= ((dischtime - admittime)/2400)/30
+        )
+admissions_tble
+
+ 
+ggplot(data = admissions_tble) + 
+  geom_bar(fill = "pink", mapping = aes(x = lengthstay)) + xlim(-2,10) +ylim(0,10) 
+  labs(title = "Bar plot for lengthstay in hospital", 
+      x = "Lengthstay(in months)") 
+range(admissions_tble$lengthstay)
+```
+**Solution**
+I plot the hospital stay data in month. When we look at the range of the graph, 
+we can see that there are some negative values which could be some wrong records.
+I keep them in the result.  
 
 ## Q4. `patients` data
 
@@ -218,7 +304,7 @@ each field in this file. The first 10 lines are
 ```{r}
 system(
   str_c(
-    "zcat < ", 
+    "gzcat < ", 
     str_c(mimic_path, "/core/patients.csv.gz"), 
     " | head"
     ), 
@@ -230,9 +316,23 @@ system(
     (<https://mimic.mit.edu/docs/iv/modules/hosp/patients/>) as a tibble
     `patients_tble` and only keep the patients who have a match in
     `icustays_tble` (according to `subject_id`).
+    
+```{r}
+patients_tble <- read_csv(str_c(mimic_path,"/core/patients.csv.gz"))
+is_tibble(patients_tble)
+
+
+patients_tble <- semi_join(patients_tble,icustays_tble, 
+                            by = c ("subject_id"))
+patients_tble
+```
 
 2.  Summarize variables `gender` and `anchor_age`, and explain any
     patterns you see.
+    
+```{r}
+
+```
 
 ## Q5. Lab results
 
