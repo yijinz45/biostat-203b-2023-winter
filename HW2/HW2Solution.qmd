@@ -66,9 +66,15 @@ Let us test the speed of reading a moderate sized compressed csv file,
 in tidyverse, and `fread` in the popular data.table package.
 
 ```{r}
-system.time(rbase <- read.csv(str_c(mimic_path, "/core/admissions.csv.gz")))
-system.time(rtidy <- read_csv(str_c(mimic_path,"/core/admissions.csv.gz")))
-system.time(rfread <- fread(str_c(mimic_path,"/core/admissions.csv.gz")))
+system.time(
+  rbase <- 
+    read.csv(str_c(mimic_path, "/core/admissions.csv.gz")))
+system.time(
+  rtidy <- 
+    read_csv(str_c(mimic_path,"/core/admissions.csv.gz")))
+system.time(
+  rfread <- 
+    fread(str_c(mimic_path,"/core/admissions.csv.gz")))
 ```
 
 Which function is fastest? Is there difference in the (default) parsed
@@ -113,19 +119,18 @@ system(
 1.  Import `icustatys.csv.gz` as a tibble `icustays_tble`.
 
 ```{r}
-icustays_tble <- read_csv(str_c(mimic_path,"/icu/icustays.csv.gz"))
-is_tibble(icustays_tble)
+icustays_tble <- read_csv(str_c(mimic_path,"/icu/icustays.csv.gz")) %>%
+ print(width = Inf)
 ```
 
-**Solution:** I used the 'read_csv' command to read the icu file into
-tibble and used the 'is_tibble' command to check if it is a tibble.
+**Solution:** I used the 'read_csv' command to read the icu file.
 
 2.  How many unique `subject_id`? Can a `subject_id` have multiple ICU
     stays?
 
 ```{r}
 icustays_tble%>%
-  distinct(subject_id) %>%
+  distinct(subject_id ) %>%
   nrow()
 ```
 
@@ -137,12 +142,12 @@ so a 'subject_id' can havemultiple ICU stays.
 3.  Summarize the number of ICU stays per `subject_id` by graphs.
 
 ```{r}
-plot_icu_stay <- icustays_tble %>% 
+plot_icu_stay <- icustays_tble %>%
   count(subject_id) %>%
-  count(n) 
-plot1 <- ggplot(data = plot_icu_stay) + 
-  geom_col(mapping = aes (x =n, y = nn, fill = nn)) + xlim(0, 40) + 
-  labs(x = "Number of ICU stays per 'subject id.", 
+  count(n)
+plot1 <- ggplot(data = plot_icu_stay) +
+  geom_col(mapping = aes (x =n, y = nn, fill = nn)) + xlim(0, 40) +
+  labs(x = "Number of ICU stays per 'subject id.",
        y = " Number of subject ids with specific number of ICU stays") 
 plot1
 ```
@@ -156,8 +161,8 @@ I use the bar plot to show the repetitive number of ICU stays in each subject id
 ```{r}
 icustays_tble <- icustays_tble %>%
   arrange(subject_id, intime) %>%
-  distinct(subject_id, .keep_all = TRUE) 
-icustays_tble
+  distinct(subject_id, .keep_all = TRUE) %>%
+ print(width = Inf)
 ```
 
 **Solution:** Sort the data and then we use the distinct(.keep_all=TRUE) so we will only have the
@@ -184,8 +189,9 @@ system(
 1.  Import `admissions.csv.gz` as a tibble `admissions_tble`.
 
 ```{r}
-admissions_tble <- read_csv(str_c(mimic_path,"/core/admissions.csv.gz"))
-is_tibble(admissions_tble)
+admissions_tble <- 
+  read_csv(str_c(mimic_path,"/core/admissions.csv.gz")) %>%
+  print(width = Inf)
 ```
 **Solution:** I used the 'read_csv' command to read the icu file into
 tibble and used the 'is_tibble' command to check if it is a tibble.
@@ -194,9 +200,9 @@ tibble and used the 'is_tibble' command to check if it is a tibble.
     according to `subject_id` and `hadmi_id`.
 
 ```{r}
-admissions_tble <- semi_join(admissions_tble,icustays_tble, 
-                            by = c ("subject_id","hadm_id"))
-admissions_tble
+admissions_tble <- admissions_tble %>%
+  semi_join(icustays_tble, by = c ("subject_id","hadm_id")) %>%
+  print(width = Inf)
 ```
 
 **Solution:** I used the semi_join command to return the matched rows.
@@ -205,9 +211,7 @@ admissions_tble
 
     -   admission year\
     
-    
 ```{r}
-
 admissions_tble <- admissions_tble %>%
   mutate("admityear" = year(as_datetime(admittime)),
          "admitmonth" = month(as_datetime(admittime)),
@@ -221,7 +225,7 @@ admissions_tble
 
 ```{r}
 ggplot(data = admissions_tble) + 
-  geom_bar(fill="pink",mapping = aes(x = admityear)) + theme_light() +
+  geom_bar(fill = "pink",mapping = aes(x = admityear)) + theme_light() +
   labs(title = "Bar plot for the admission time by year",
   x = "Admission year")
 ```
@@ -266,7 +270,7 @@ open time of the hospital.
 
 ```{r}
 ggplot(data = admissions_tble) + 
-  geom_bar(fill ="pink", mapping = aes(x = admitmin)) + theme_light() +
+  geom_bar(fill = "pink", mapping = aes(x = admitmin)) + theme_light() +
   labs(title = "Bar plot for the admission time by admit mnuute", 
       x = "Admit minute") 
 ```
@@ -279,21 +283,31 @@ For example: record 14 as 15.
     
 ```{r}
 admissions_tble <- admissions_tble %>%
-  mutate( "lengthstay"= ((dischtime - admittime)/2400)/30
+  mutate( "lengthstaydays" = ((dischtime - admittime) / 1400) 
         )
 admissions_tble
 
- 
+
 ggplot(data = admissions_tble) + 
-  geom_bar(fill = "pink", mapping = aes(x = lengthstay)) + xlim(-2,10) +ylim(0,10) 
+  geom_bar( mapping = aes(x = lengthstaydays)) + xlim(-1, 281) + 
+  ylim(0, 10) + theme_light() +
   labs(title = "Bar plot for lengthstay in hospital", 
-      x = "Lengthstay(in months)") 
+      x = "Lengthstay(in days)") 
+range(admissions_tble$lengthstay)
+
+ggplot(data = admissions_tble) + 
+  geom_bar( mapping = aes(x = lengthstaydays)) + xlim(-1, 35) + 
+  ylim(0, 10) + theme_light() +
+  labs(title = "Bar plot for lengthstay in hospital", 
+      x = "Lengthstay(in days)") 
 range(admissions_tble$lengthstay)
 ```
 **Solution**
 I plot the hospital stay data in month. When we look at the range of the graph, 
-we can see that there are some negative values which could be some wrong records.
-I keep them in the result.  
+there are also someone who have 281 days of hospital. So I regenerate a plot 
+only contain those data within 30 days. Although it is not obvious, we can see
+that there are some slight shadows below 0. We can see that there are some 
+negative values which could be some wrong records. I keep them in the result. 
 
 ## Q4. `patients` data
 
@@ -319,19 +333,39 @@ system(
     
 ```{r}
 patients_tble <- read_csv(str_c(mimic_path,"/core/patients.csv.gz"))
-is_tibble(patients_tble)
-
-
-patients_tble <- semi_join(patients_tble,icustays_tble, 
-                            by = c ("subject_id"))
-patients_tble
+          
+patients_tble <- patients_tble %>%
+  arrange(subject_id) %>%
+  semi_join(icustays_tble, by = c ("subject_id"))  %>%
+  print(width = Inf)
 ```
 
 2.  Summarize variables `gender` and `anchor_age`, and explain any
     patterns you see.
     
 ```{r}
+patients_tble %>%
+  ggplot(aes(x = gender)) +
+  geom_bar(aes(x = gender, fill = gender)) +
+  scale_x_discrete(labels = c("Female", "Male")) 
 
+box <- ggplot(data = patients_tble, mapping = aes(x = gender, y = anchor_age)) + 
+  geom_boxplot() + labs(title = "Anchor age by gender") +
+  labs(x = "Gender", y = "Anchor age)")
+box
+
+```
+**Solution :** Based on the bar plot of gender, There are more male than female.
+Also, I plot the box plot to see the distribution of those data, we can see that
+the mean age for the female are higher than male. 
+
+Plots for anchor_age:
+```{r}
+baranchor <- patients_tble %>%
+  ggplot(aes(x = anchor_age)) +
+  geom_bar(mapping = aes (fill = gender, x = anchor_age)) +
+  labs(x = "Anchor age", fill = "Gender")
+baranchor
 ```
 
 ## Q5. Lab results
@@ -382,8 +416,30 @@ system(
 
 3.  Further restrict `labevents_tble` to the first lab measurement
     during the ICU stay.
+```{r}
+#this code is taught by professor zhou in classtime
+labevents_tble %>%
+  left_join(select(icustays_tble, subject_id, intime, outime),
+    by = c("subject_id")) %>%
+  filter(charttime >= intime & charttime <= outtime) %>%
+  # Keep the first measuremnt of ach lab itteem for each patient
+  group_by(subject_id, itemid) %>%
+  arrange(charttime, .bygroup = TRUE) %>%
+  slice_head(n = 1) %>%
+  ungroup() %>%
+  #important to take off before pivot wider or multiple rows for itemid
+  select(-intime, -outtime, -charttime) %>%
+  pivot_wider(names_froom = itemid, values_from = valuenum) %>%
+  
+  rename_at(
+    vars(as.character(dlabitems_tble$itemid)),
+    ~str_to_lower(dlabitems_tble$label)
+  ) %>%
+  print(width = Inf)
+```
 
 4.  Summarize the lab measurements by appropriate numerics and graphics.
+
 
 ## Q6. Vitals from charted events
 
