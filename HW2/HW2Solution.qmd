@@ -494,9 +494,8 @@ plotdata <- labevents_tble %>%
   gather() %>%
   group_by(key) %>%
   ggplot() + geom_boxplot(mapping = aes(y = value)) +
-  facet_wrap(~key, scales = "free_y") 
+  facet_wrap(~key, scales = "free_y", ncol = 4) 
 plotdata
-
 
 ```
 
