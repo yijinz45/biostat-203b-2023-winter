@@ -363,10 +363,14 @@ Plots for anchor_age:
 ```{r}
 baranchor <- patients_tble %>%
   ggplot(aes(x = anchor_age)) +
-  geom_bar(mapping = aes (fill = gender, x = anchor_age)) +
+  geom_bar(mapping = aes (fill = gender, x = anchor_age) ,position = "dodge") +
   labs(x = "Anchor age", fill = "Gender")
 baranchor
 ```
+
+**Solution :** 
+We can see that people ages around 60-70 have the highest counts. 
+
 
 ## Q5. Lab results
 
@@ -400,6 +404,25 @@ system(
 
 1.  Find how many rows are in `labevents.csv.gz`.
 
+```{r}
+labevent <- read_csv(str_c(mimic_path,"/hosp/labevents_filtered_itemid.csv.gz"))
+```
+I cannot read the labevent.csv.gz so I read the labevents_filtered_itemid.csv.gz. 
+We can see from the output that there are 30198826 rows and 4 columns in this 
+filtered file.
+```{r}
+system(
+  str_c(
+    "zcat < ", 
+    str_c(mimic_path, "/hosp/labevents.csv.gz"),
+    " | tail -n +2 | wc -l"
+  ), 
+  intern = TRUE
+)
+```
+
+**Solution:** Based on the result from the wc command. There are 122103667 rows in the labevent file. 
+
 2.  We are interested in the lab measurements of creatinine (50912),
     potassium (50971), sodium (50983), chloride (50902), bicarbonate
     (50882), hematocrit (51221), white blood cell count (51301), and
@@ -414,12 +437,29 @@ system(
     really has trouble importing `labevents.csv.gz`, you can import from
     the reduced data file `labevents_filtered_itemid.csv.gz`.
 
+```{r}
+head(labevent)
+d_labitems_tble <- read_csv(str_c(mimic_path,"/hosp/d_labitems.csv.gz"))
+itemid_want <- c(50912, 50971, 50983, 50902, 50882, 51221, 51301, 50931)
+d_labitems_tble
+
+d_labitems_tble <-filter(d_labitems_tble, itemid %in% itemid_want)
+head(d_labitems_tble)
+
+labevents_tble <- labevent %>%
+  arrange(subject_id) %>%
+  semi_join(icustays_tble, by = c ("subject_id"))  %>%
+  
+  semi_join(d_labitems_tble, by = c ("itemid"))  %>%
+  print(width = Inf)
+```
+
 3.  Further restrict `labevents_tble` to the first lab measurement
     during the ICU stay.
 ```{r}
 #this code is taught by professor zhou in classtime
-labevents_tble %>%
-  left_join(select(icustays_tble, subject_id, intime, outime),
+labevents_tble <- labevents_tble %>%
+  left_join(select(icustays_tble, subject_id, intime, outtime),
     by = c("subject_id")) %>%
   filter(charttime >= intime & charttime <= outtime) %>%
   # Keep the first measuremnt of ach lab itteem for each patient
@@ -429,16 +469,37 @@ labevents_tble %>%
   ungroup() %>%
   #important to take off before pivot wider or multiple rows for itemid
   select(-intime, -outtime, -charttime) %>%
-  pivot_wider(names_froom = itemid, values_from = valuenum) %>%
+  pivot_wider(names_from = itemid, values_from = valuenum) %>%
   
   rename_at(
-    vars(as.character(dlabitems_tble$itemid)),
-    ~str_to_lower(dlabitems_tble$label)
+    vars(as.character(d_labitems_tble$itemid)),
+    ~str_to_lower(d_labitems_tble$label)
   ) %>%
   print(width = Inf)
 ```
 
 4.  Summarize the lab measurements by appropriate numerics and graphics.
+
+```{r}
+summary(labevents_tble)
+```
+Graph:
+
+```{r}
+
+names(labevents_tble) %<>% stringr::str_replace_all("\\s","_") %>% tolower
+  
+plotdata <- labevents_tble %>%
+  select(bicarbonate:white_blood_cells) %>%
+  gather() %>%
+  group_by(key) %>%
+  ggplot() + geom_boxplot(mapping = aes(y = value)) +
+  facet_wrap(~key, scales = "free_y") 
+plotdata
+
+
+```
+
 
 
 ## Q6. Vitals from charted events
