@@ -576,7 +576,7 @@ chartevents_tble <- chartevents_tble %>%
   slice_head(n = 1) %>%
   ungroup() %>%
   #important to take off before pivot wider or multiple rows for itemid
-  select(-intime, -outtime, -charttime) %>%
+  select(-intime, -outtime, -charttime, -hadm_id, -stay_id) %>%
   pivot_wider(names_from = itemid, values_from = valuenum) %>%
   rename_at(
     vars(as.character(d_items $itemid)),
@@ -605,11 +605,12 @@ plotdata2 <- chartevents_tble %>%
 plotdata2
 ```
 
-**Solution:**  There are a lot of outliers in this data. I keep them in there
-because they are meaningful. Removing outliers is legitimate only for specific 
-reasons. These Outliers can be informative about the subject-area and data 
-collection process. We could figure out how outliers occur and whether 
-they might happen as a normal part of the study. 
+
+**Solution:**  There are a lot of outliers in this data. 
+We could also set the limit or delete thos outliers for the boxplot too.
+I keep them in there because they are meaningful. Some of These Outliers can be 
+informative about the subject-area anddata collection process. We could figure 
+out how outliers occur and whether they might happen as a normal part of the study. 
 
 ## Q7. Putting things together
 
@@ -624,6 +625,24 @@ columns contain at least following variables
 -   first vital measurements during ICU stay
 -   an indicator variable `thirty_day_mort` whether the patient died
     within 30 days of hospital admission (30 day mortality)
+    
+```{r}
+mimic_icu_cohort <- icustays_tble %>%
+  #join all variables
+  left_join(admissions_tble, by = c("subject_id", "hadm_id")) %>%
+  left_join(patients_tble, by = c("subject_id")) %>%
+  left_join(labevents_tble, by = c("subject_id")) %>%
+  left_join(chartevents_tble, by = c("subject_id")) %>%
+  #get the age of the patents
+  mutate(age_at_admission =  year(admittime) - anchor_year + anchor_age) %>%
+  filter(age_at_admission > 18) %>%
+  mutate(thirty_day_point = ifelse(is.na(deathtime), "FALSE", 
+                            ifelse(as.Date(deathtime) - 
+                                     as.Date(admittime) <= 30, 
+                                   "TRUE", "FALSE"))) %>%
+  print(width = Inf)
+```
+
 
 ## Q8. Exploratory data analysis (EDA)
 
