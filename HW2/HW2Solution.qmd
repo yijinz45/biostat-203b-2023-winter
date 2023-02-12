@@ -438,13 +438,11 @@ system(
     the reduced data file `labevents_filtered_itemid.csv.gz`.
 
 ```{r}
-head(labevent)
 d_labitems_tble <- read_csv(str_c(mimic_path,"/hosp/d_labitems.csv.gz"))
 itemid_want <- c(50912, 50971, 50983, 50902, 50882, 51221, 51301, 50931)
 d_labitems_tble
-
+#filter the needed column in the codebook
 d_labitems_tble <-filter(d_labitems_tble, itemid %in% itemid_want)
-head(d_labitems_tble)
 
 labevents_tble <- labevent %>%
   arrange(subject_id) %>%
@@ -481,7 +479,7 @@ labevents_tble <- labevents_tble %>%
 4.  Summarize the lab measurements by appropriate numerics and graphics.
 
 ```{r}
-summary(labevents_tble)
+summary(labevents_tble[-1])
 ```
 Graph:
 
@@ -548,12 +546,70 @@ system(
     your computer really has trouble importing `chartevents.csv.gz`, you
     can import from the reduced data file
     `chartevents_filtered_itemid.csv.gz`.
+    
+```{r}
+chartevents_tble <- read_csv(str_c(mimic_path, "/icu/chartevents_filtered_itemid.csv.gz"))
+```
+
+```{r}
+d_items <- read_csv(str_c(mimic_path, "/icu/d_items.csv.gz"))
+ditemid_want <- c(220045, 220181, 220179, 223761, 220210)
+d_items <- filter(d_items, itemid %in% ditemid_want)
+chartevents_tble <- chartevents_tble %>%
+  arrange(subject_id) %>%
+  semi_join(icustays_tble, by = c ("subject_id"))  %>%
+  semi_join(d_items, by = c ("itemid"))  
+chartevents_tble
+```
 
 2.  Further restrict `chartevents_tble` to the first vital measurement
     during the ICU stay.
 
+```{r}
+chartevents_tble <- chartevents_tble %>%
+  left_join(select(icustays_tble, subject_id, intime, outtime),
+    by = c("subject_id")) %>%
+  filter(charttime >= intime & charttime <= outtime) %>%
+  # Keep the first measuremnt of ach lab itteem for each patient
+  group_by(subject_id, itemid) %>%
+  arrange(charttime, .bygroup = TRUE) %>%
+  slice_head(n = 1) %>%
+  ungroup() %>%
+  #important to take off before pivot wider or multiple rows for itemid
+  select(-intime, -outtime, -charttime) %>%
+  pivot_wider(names_from = itemid, values_from = valuenum) %>%
+  rename_at(
+    vars(as.character(d_items $itemid)),
+    ~str_to_lower(d_items$label)
+  ) %>%
+  print(width = Inf)
+```
+
 3.  Summarize these vital measurements by appropriate numerics and
     graphics.
+
+```{r}
+summary(chartevents_tble[-1])
+```
+
+
+
+```{r}
+names(chartevents_tble) %<>% stringr::str_replace_all("\\s","_") %>% tolower
+plotdata2 <- chartevents_tble %>%
+  select(heart_rate:temperature_fahrenheit) %>%
+  gather() %>%
+  group_by(key) %>%
+  ggplot() + geom_boxplot(mapping = aes(y = value)) +
+  facet_wrap(~key, scales = "free_y", ncol = 3) 
+plotdata2
+```
+
+**Solution:**  There are a lot of outliers in this data. I keep them in there
+because they are meaningful. Removing outliers is legitimate only for specific 
+reasons. These Outliers can be informative about the subject-area and data 
+collection process. We could figure out how outliers occur and whether 
+they might happen as a normal part of the study. 
 
 ## Q7. Putting things together
 
