@@ -606,11 +606,6 @@ plotdata2
 ```
 
 
-**Solution:**  There are a lot of outliers in this data. 
-We could also set the limit or delete thos outliers for the boxplot too.
-I keep them in there because they are meaningful. Some of These Outliers can be 
-informative about the subject-area anddata collection process. We could figure 
-out how outliers occur and whether they might happen as a normal part of the study. 
 
 ## Q7. Putting things together
 
@@ -636,7 +631,7 @@ mimic_icu_cohort <- icustays_tble %>%
   #get the age of the patents
   mutate(age_at_admission =  year(admittime) - anchor_year + anchor_age) %>%
   filter(age_at_admission > 18) %>%
-  mutate(thirty_day_point = ifelse(is.na(deathtime), "FALSE", 
+  mutate(thirty_day_mort = ifelse(is.na(deathtime), "FALSE", 
                             ifelse(as.Date(deathtime) - 
                                      as.Date(admittime) <= 30, 
                                    "TRUE", "FALSE"))) %>%
@@ -651,8 +646,108 @@ Summarize following information using appropriate numerics or graphs.
 -   `thirty_day_mort` vs demographic variables (ethnicity, language,
     insurance, marital_status, gender, age at hospital admission)
 
+
+1. `thirty_day_mort` vs ethnicity
+
+```{r}
+mimic_icu_cohort %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = thirty_day_mort, fill = ethnicity), 
+           position = "dodge") +
+  labs(x = "30 day mortality") +
+  labs(title = "Thirty_day_mort vs ethnicity") 
+```
+
+**Solution: **
+There are a lot of white people in the false group.
+
+2. `thirty_day_mort` vs  language
+
+```{r}
+mimic_icu_cohort %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = thirty_day_mort, fill = language), 
+           position = "dodge") +
+  labs(x = "30 day mortality") +
+  labs(title = "Thirty_day_mort vs language")
+```
+
+**Solution:**
+There are more english speakers in both group. 
+
+3. `thirty_day_mort` vs insurance
+
+
+```{r}
+mimic_icu_cohort %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = thirty_day_mort, fill = insurance), 
+           position = "dodge") +
+  labs(x = "30 day mortality") +
+  labs(title = "Thirty_day_mort vs insurance")
+```
+
+**Solution:**
+There are more others in those people who died before 30 days.
+
+4. `thirty_day_mort` vs, marital_status 
+
+```{r}
+mimic_icu_cohort %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = thirty_day_mort, fill = marital_status), 
+           position = "dodge") +
+  labs(x = "30 day mortality") +
+  labs(title = "Thirty_day_mort vs marital_status")
+```
+
+**Solution:**
+Most people are married. The ratio within in the marital_status is the same 
+between 30 days died and survived groups. 
+
+5.  `thirty_day_mort` vs gender
+
+```{r}
+mimic_icu_cohort %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = thirty_day_mort, fill = gender), 
+           position = "dodge") +
+  labs(x = "30 day mortality") +
+  labs(title = "Thirty_day_mort vs gender")
+```
+
+**Solution:**
+There are more males. 
+
+6.  `thirty_day_mort` vs age at hospital admission
+
+```{r}
+mimic_icu_cohort %>%
+  ggplot() +
+  geom_boxplot(mapping = aes(x = thirty_day_mort, y = age_at_admission)) +
+  labs(x = "30 day mortality") +
+  labs(title = "Thirty_day_mort vs age at hospital admission")
+```
+
+
+**Solution:** There peopoloe who dies within 30 daya were older than those who 
+did not. 
+
 -   `thirty_day_mort` vs first lab measurements
+
+```{r}
+
+```
 
 -   `thirty_day_mort` vs first vital measurements
 
+```{r}
+
+```
+
 -   `thirty_day_mort` vs first ICU unit
+
+```{r}
+
+```
+
