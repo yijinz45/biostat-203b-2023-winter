@@ -745,7 +745,8 @@ geom_boxplot(aes_string(x= "thirty_day_mort", y = colname), outlier.shape = NA)+
 coord_cartesian(ylim = quantile(mimic_icu_cohort[i], c(0.1, 0.9), na.rm = T))) 
   }
 ```
-
+The first 8 plots are `thirty_day_mort` vs first lab measurements and the last
+5 plots are `thirty_day_mort` vs first vital measurements. 
 
 -   `thirty_day_mort` vs first ICU unit
 
