@@ -734,20 +734,27 @@ mimic_icu_cohort %>%
 did not. 
 
 -   `thirty_day_mort` vs first lab measurements
-
-```{r}
-
-```
-
 -   `thirty_day_mort` vs first vital measurements
 
 ```{r}
-
+names(mimic_icu_cohort) = names(mimic_icu_cohort) 
+  for (i in 34:46) {
+    colname = names(mimic_icu_cohort)[i]
+    print(ggplot(mimic_icu_cohort) + 
+geom_boxplot(aes_string(x= "thirty_day_mort", y = colname), outlier.shape = NA)+
+coord_cartesian(ylim = quantile(mimic_icu_cohort[i], c(0.1, 0.9), na.rm = T))) 
+  }
 ```
+
 
 -   `thirty_day_mort` vs first ICU unit
 
 ```{r}
-
+mimic_icu_cohort %>%
+  ggplot() +
+  geom_bar(mapping = aes(x = thirty_day_mort, fill = first_careunit), 
+           position = "dodge") + labs(y = "percent") +
+  labs(title = "First ICU unit by 30 day mortality") 
 ```
 
+**Solution**
