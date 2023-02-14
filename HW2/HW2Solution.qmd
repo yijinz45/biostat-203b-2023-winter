@@ -561,8 +561,8 @@ d_items <- filter(d_items, itemid %in% ditemid_want)
 chartevents_tble <- chartevents_tble %>%
   arrange(subject_id) %>%
   semi_join(icustays_tble, by = c ("subject_id"))  %>%
-  semi_join(d_items, by = c ("itemid"))  
-chartevents_tble
+  semi_join(d_items, by = c ("itemid"))  %>%
+print(width = Inf)
 ```
 
 2.  Further restrict `chartevents_tble` to the first vital measurement
@@ -647,6 +647,12 @@ mimic_icu_cohort <- icustays_tble %>%
                                      as.Date(admittime) <= 30, 
                                    "TRUE", "FALSE"))) %>%
   print(width = Inf)
+```
+
+**Solution:** Print the counts of TRUE and FALSE for thirty_day_mort
+
+```{r}
+table(mimic_icu_cohort$thirty_day_mort)
 ```
 
 
