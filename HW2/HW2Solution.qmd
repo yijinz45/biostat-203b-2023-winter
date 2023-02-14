@@ -146,7 +146,7 @@ plot_icu_stay <- icustays_tble %>%
   count(subject_id) %>%
   count(n)
 plot1 <- ggplot(data = plot_icu_stay) +
-  geom_col(mapping = aes (x =n, y = nn, fill = nn)) + xlim(0, 40) +
+  geom_col(mapping = aes (x = n, y = nn, fill = nn)) + xlim(0, 40) +
   labs(x = "Number of ICU stays per 'subject id.",
        y = " Number of subject ids with specific number of ICU stays") 
 plot1
@@ -162,7 +162,7 @@ I use the bar plot to show the repetitive number of ICU stays in each subject id
 icustays_tble <- icustays_tble %>%
   arrange(subject_id, intime) %>%
   distinct(subject_id, .keep_all = TRUE) %>%
- print(width = Inf)
+print(width = Inf)
 ```
 
 **Solution:** Sort the data and then we use the distinct(.keep_all=TRUE) so we will only have the
@@ -191,7 +191,7 @@ system(
 ```{r}
 admissions_tble <- 
   read_csv(str_c(mimic_path,"/core/admissions.csv.gz")) %>%
-  print(width = Inf)
+print(width = Inf)
 ```
 **Solution:** I used the 'read_csv' command to read the icu file into
 tibble and used the 'is_tibble' command to check if it is a tibble.
@@ -202,7 +202,7 @@ tibble and used the 'is_tibble' command to check if it is a tibble.
 ```{r}
 admissions_tble <- admissions_tble %>%
   semi_join(icustays_tble, by = c ("subject_id","hadm_id")) %>%
-  print(width = Inf)
+print(width = Inf)
 ```
 
 **Solution:** I used the semi_join command to return the matched rows.
@@ -442,7 +442,7 @@ d_labitems_tble <- read_csv(str_c(mimic_path,"/hosp/d_labitems.csv.gz"))
 itemid_want <- c(50912, 50971, 50983, 50902, 50882, 51221, 51301, 50931)
 d_labitems_tble
 #filter the needed column in the codebook
-d_labitems_tble <-filter(d_labitems_tble, itemid %in% itemid_want)
+d_labitems_tble <- filter(d_labitems_tble, itemid %in% itemid_want)
 
 labevents_tble <- labevent %>%
   arrange(subject_id) %>%
@@ -486,13 +486,16 @@ Graph:
 ```{r}
 
 names(labevents_tble) %<>% stringr::str_replace_all("\\s","_") %>% tolower
-  
-plotdata <- labevents_tble %>%
-  select(bicarbonate:white_blood_cells) %>%
-  gather() %>%
+labevents_tble1 <- labevents_tble %>%
+select(bicarbonate:white_blood_cells) %>%
+  gather(key = "key",value = "value") %>%
   group_by(key) %>%
+  filter(value > quantile(value, 0.1, na.rm = TRUE) 
+         & value < quantile(value, 0.975, na.rm = TRUE))
+plotdata <- labevents_tble1 %>%
   ggplot() + geom_boxplot(mapping = aes(y = value)) +
-  facet_wrap(~key, scales = "free_y", ncol = 4) 
+  facet_wrap(~key, scales = "free_y", ncol = 4) + 
+  labs(title = "Boxplots for the first vital measurements ")
 plotdata
 
 ```
@@ -596,11 +599,17 @@ summary(chartevents_tble[-1])
 
 ```{r}
 names(chartevents_tble) %<>% stringr::str_replace_all("\\s","_") %>% tolower
-plotdata2 <- chartevents_tble %>%
+#get rid of those outliers
+chartevents_tble1 <- chartevents_tble %>%
   select(heart_rate:temperature_fahrenheit) %>%
-  gather() %>%
+  gather(key = "key",
+  value = "value") %>%
   group_by(key) %>%
-  ggplot() + geom_boxplot(mapping = aes(y = value)) +
+  filter(value > quantile(value, 0.025, na.rm = TRUE) 
+         & value < quantile(value, 0.975, na.rm = TRUE)) 
+#boxplot by ggplot2 for filtered data
+plotdata2 <- chartevents_tble1 %>%
+  ggplot() + geom_boxplot(mapping = aes(y = value), outlier.shape = NA) +
   facet_wrap(~key, scales = "free_y", ncol = 3) 
 plotdata2
 ```
@@ -742,11 +751,15 @@ names(mimic_icu_cohort) = names(mimic_icu_cohort)
     colname = names(mimic_icu_cohort)[i]
     print(ggplot(mimic_icu_cohort) + 
 geom_boxplot(aes_string(x= "thirty_day_mort", y = colname), outlier.shape = NA)+
-coord_cartesian(ylim = quantile(mimic_icu_cohort[i], c(0.1, 0.9), na.rm = T))) 
+coord_cartesian(ylim = 
+                  quantile(mimic_icu_cohort[i], c(0.025, 0.95), na.rm = T))) 
   }
 ```
+**Solution**
+I put plots for te two questions together since they come from the same code. 
 The first 8 plots are `thirty_day_mort` vs first lab measurements and the last
 5 plots are `thirty_day_mort` vs first vital measurements. 
+
 
 -   `thirty_day_mort` vs first ICU unit
 
@@ -758,4 +771,4 @@ mimic_icu_cohort %>%
   labs(title = "First ICU unit by 30 day mortality") 
 ```
 
-**Solution**
+**Solution** Seems that neuro stepdown has the lowest number within each group. 
