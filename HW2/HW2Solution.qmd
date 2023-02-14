@@ -582,7 +582,7 @@ chartevents_tble <- chartevents_tble %>%
   select(-intime, -outtime, -charttime, -hadm_id, -stay_id) %>%
   pivot_wider(names_from = itemid, values_from = valuenum) %>%
   rename_at(
-    vars(as.character(d_items $itemid)),
+    vars(as.character(d_items$itemid)),
     ~str_to_lower(d_items$label)
   ) %>%
   print(width = Inf)
@@ -595,7 +595,8 @@ chartevents_tble <- chartevents_tble %>%
 summary(chartevents_tble[-1])
 ```
 
-
+**Solution** We can see some really big standard deviations. There might be the 
+results of some outliers. 
 
 ```{r}
 names(chartevents_tble) %<>% stringr::str_replace_all("\\s","_") %>% tolower
@@ -614,7 +615,8 @@ plotdata2 <- chartevents_tble1 %>%
 plotdata2
 ```
 
-
+**Solution** We can see the mean for each groups wthout outliers. Sometime we
+need to keep the outlieers but I delete them to make the plots more readible.  
 
 ## Q7. Putting things together
 
@@ -668,7 +670,8 @@ mimic_icu_cohort %>%
 ```
 
 **Solution: **
-There are a lot of white people in the false group.
+There are a lot of white people in the false group. The rave ratio sthe same 
+seperted by 30 day mortality pointer. 
 
 2. `thirty_day_mort` vs  language
 
@@ -682,11 +685,9 @@ mimic_icu_cohort %>%
 ```
 
 **Solution:**
-There are more english speakers in both group. 
+There are more english speakers in both group. The ratio is the saeme. 
 
 3. `thirty_day_mort` vs insurance
-
-
 ```{r}
 mimic_icu_cohort %>%
   ggplot() +
@@ -711,8 +712,8 @@ mimic_icu_cohort %>%
 ```
 
 **Solution:**
-Most people are married. The ratio within in the marital_status is the same 
-between 30 days died and survived groups. 
+Most people are married. The ratio of marriage status  is the same between 30 
+days died and survived groups. 
 
 5.  `thirty_day_mort` vs gender
 
@@ -726,7 +727,8 @@ mimic_icu_cohort %>%
 ```
 
 **Solution:**
-There are more males. 
+There are more males died. The death ratio in gender is the same whether die or 
+not in 30 days.
 
 6.  `thirty_day_mort` vs age at hospital admission
 
@@ -739,7 +741,7 @@ mimic_icu_cohort %>%
 ```
 
 
-**Solution:** There peopoloe who dies within 30 daya were older than those who 
+**Solution:** These people who dies within 30 days were older than those who 
 did not. 
 
 -   `thirty_day_mort` vs first lab measurements
@@ -758,7 +760,8 @@ coord_cartesian(ylim =
 **Solution**
 I put plots for te two questions together since they come from the same code. 
 The first 8 plots are `thirty_day_mort` vs first lab measurements and the last
-5 plots are `thirty_day_mort` vs first vital measurements. 
+5 plots are `thirty_day_mort` vs first vital measurements. Mean of creatinine, 
+glucose, potassium, heart rate and respiratory rate have big different.
 
 
 -   `thirty_day_mort` vs first ICU unit
