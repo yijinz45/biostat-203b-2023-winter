@@ -449,9 +449,10 @@ We use the awk command to ignore the first row and use the we -l to count the nu
 
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
 
-  4  708k    4 31126    0     0  33969      0  0:00:21 --:--:--  0:00:21 33969
-100  708k  100  708k    0     0   559k      0  0:00:01  0:00:01 --:--:-- 1941k</code></pre>
+ 95  708k   95  677k    0     0   571k      0  0:00:01  0:00:01 --:--:--  571k
+100  708k  100  708k    0     0   597k      0  0:00:01  0:00:01 --:--:-- 29.9M</code></pre>
 </div>
 </div>
 <p><strong>Solution: </strong> Done</p>
@@ -472,8 +473,8 @@ We use the awk command to ignore the first row and use the we -l to count the nu
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
 
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-100  708k  100  708k    0     0   652k      0  0:00:01  0:00:01 --:--:-- 1472k
+ 12  708k   12 91756    0     0  92354      0  0:00:07 --:--:--  0:00:07 92354
+100  708k  100  708k    0     0   543k      0  0:00:01  0:00:01 --:--:-- 2007k
 Elizabeth:
      634
 Jane:
@@ -600,7 +601,7 @@ Su Mo Tu We Th Fr Sa
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb48"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">date</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Fri Jan 27 16:35:25 PST 2023</code></pre>
+<pre><code>Fri Jan 27 17:18:16 PST 2023</code></pre>
 </div>
 </div>
 <p><strong>Solution: </strong> The date command, will shows the system time . The result including the abbreviated day name, abbreviated month name, day of the month, the time separated by colons, the time zone name, and the year.</p>
@@ -628,14 +629,14 @@ Su Mo Tu We Th Fr Sa
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb56"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">uptime</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>16:35  up 27 days, 22:33, 3 users, load averages: 5.21 5.23 5.40</code></pre>
+<pre><code>17:18  up 27 days, 23:16, 3 users, load averages: 8.92 6.41 5.47</code></pre>
 </div>
 </div>
 <p><strong>Solution</strong> The uptime is a command that returns information about how long your system has been running together with the current time, number of users with running sessions, and the system load averages for the past 1, 5, and 15 minutes.</p>
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb58"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="fu">who</span> am i</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Aoki     tty??    Jan 27 16:35 </code></pre>
+<pre><code>Aoki     tty??    Jan 27 17:18 </code></pre>
 </div>
 </div>
 <p><strong>Solution: </strong>The who am i command display the username of the current user when this command is invoked.</p>
@@ -651,11 +652,11 @@ Aoki      ttys002  Jan 27 16:32 </code></pre>
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb62"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="fu">w</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>16:35  up 27 days, 22:33, 3 users, load averages: 5.21 5.23 5.40
+<pre><code>17:18  up 27 days, 23:16, 3 users, load averages: 8.92 6.41 5.47
 USER     TTY      FROM              LOGIN@  IDLE WHAT
-zhaoyijin console  -                10Jan23 16days -
-Aoki     console  -                Mon16   3days -
-Aoki     s002     -                16:32       3 -bash         &lt;ff&gt;&lt;bf&gt;    /bin/bash </code></pre>
+zhaoyijin console  -                10Jan23 17days -
+Aoki     console  -                Mon16   4days -
+Aoki     s002     -                16:32      45 -bash         &lt;ff&gt;&lt;bf&gt;    /bin/bash </code></pre>
 </div>
 </div>
 <p><strong>Solution:</strong>The w command is a built-in tool that allows administrators to view information about users that are currently logged in.</p>
@@ -693,9 +694,9 @@ Aoki      ttys000                   Thu Jan 19 13:07 - 13:07  (00:00)</code></pr
 <div class="sourceCode cell-code" id="cb70"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="bu">time</span> sleep 5</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
-real    0m5.010s
+real    0m5.013s
 user    0m0.001s
-sys 0m0.004s</code></pre>
+sys 0m0.007s</code></pre>
 </div>
 </div>
 <p><strong>Solution:</strong> Linux sleep command lets the terminal wait by the specified amount of time. By default, it takes time in seconds. But, we can set the delay time in minutes (m), hours (h), and days (d). It helps in pausing the execution of any particular command for a fixed amount of time.</p>
