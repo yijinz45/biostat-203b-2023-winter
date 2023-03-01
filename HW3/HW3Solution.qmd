@@ -204,7 +204,7 @@ if (!dir.exists("mimiciv_shiny")) {
 ```
 
 ```{r}
- icu_cohort <- icustays_tble %>%
+icu_cohort <- icustays_tble %>%
   #join all variables
   left_join(admissions_tble, by = c("subject_id", "hadm_id")) %>%
   left_join(patients_tble, by = c("subject_id")) %>%
@@ -213,9 +213,9 @@ if (!dir.exists("mimiciv_shiny")) {
   #get the age of the patents
   mutate(age_at_admission =  year(admittime) - anchor_year + anchor_age) %>%
   filter(age_at_admission >= 18) %>%
-  mutate(thirty_day_mort = 
+  mutate(day30mort = 
            ifelse(is.na(deathtime), FALSE,
-                  DATE_DIFF(date(deathtime), date(admittime), DAY) <= 30)) %>%
+           DATE_DIFF(date(deathtime), date(admittime), DAY) <= 30)) %>%
   # (vi) save the final tibble to an `icu_cohort.rds` in `mimiciv_shiny`
   collect() %>%
   write_rds("mimiciv_shiny/icu_cohort.rds") %>%
