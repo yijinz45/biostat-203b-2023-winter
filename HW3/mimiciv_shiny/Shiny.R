@@ -10,15 +10,15 @@ library(lubridate)
 icu_cohort <- readRDS("icu_cohort.rds")
 
 ## demographics
-demographvar <- c("age_at_admission", "gender", "ethnicity", "language", 
+demographvar <- c("age_at_admission","gender", "ethnicity", "language", 
              "insurance", "marital_status", "Bicarbonate", 
              "Chloride", "Creatinine", "Glucose", "Potassium", "Sodium",
              "Hematocrit", "White_Blood_Cells","Heart_Rate", 
               "Non_Invasive_Blood_Pressure_systolic",
               "Non_Invasive_Blood_Pressure_mean", "Respiratory_Rate",
               "Temperature_Fahrenheit")
-
-boxplotvar <- c("Bicarbonate", "Chloride", "Creatinine", "Glucose", "Potassium",
+#boxplot variable
+boxplotvar <- c("age_at_admission","Bicarbonate", "Chloride", "Creatinine", "Glucose", "Potassium",
                 "Sodium", "Hematocrit", "White_Blood_Cells", "Heart_Rate", 
                 "Non_Invasive_Blood_Pressure_systolic", 
                 "Non_Invasive_Blood_Pressure_mean", 
@@ -52,25 +52,15 @@ ui <- fluidPage(
       # tableOutput("demographtable"),
       # Output: 
       helpText("Plot of selected variable:"),
-      plotOutput(outputId = "demoboxplot")
+      plotOutput(outputId = "demoboxplot"),
+      verbatimTextOutput("summary")
     )
   )
 )
-
-
-
+#create the server
 server <- function(input, output) {
-  
-  # Histogram of the Old Faithful Geyser Data ----
-  # with requested number of bins
-  # This expression that generates a histogram is wrapped in a call
-  # to renderPlot to indicate that:
-  #
-  # 1. It is "reactive" and therefore should be automatically
-  #    re-executed when inputs (input$bins) change
-  # 2. Its output type is a plot
   output$demoboxplot <- renderPlot({
-    
+#separate the categoricol and the quantitative    
     if(input$demo %in% boxplotvar){
       
       icu_cohort %>%
@@ -85,13 +75,17 @@ server <- function(input, output) {
           ggplot(., aes_string(x = input$demo)) +
           geom_bar(aes_string(x = input$demo, fill = icu_cohort$day30mort)) +
           labs(title = paste0("Bar chart of ", input$demo))
-        
       }
-       
-    
   })
-  
+  #create the table chart in the ui
+  output$summary <- renderPrint({
+    if (input$demo %in% boxplotvar) {
+    summary(icu_cohort[input$demo])
+      } else
+      {
+    table(icu_cohort[input$demo])   
+      }
+  })
 }
 #run the dataset
 shinyApp(ui = ui, server = server)
-
