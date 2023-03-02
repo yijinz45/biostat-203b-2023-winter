@@ -62,7 +62,7 @@ ui <- fluidPage(
 #create the server
 server <- function(input, output) {
   output$demoboxplot <- renderPlot({
-#separate the categoricol and the quantitative for boxplots   
+#separate the categorical and the quantitative for box plots   
     if(input$demo %in% boxplotvar){
       
       icu_cohort %>%
