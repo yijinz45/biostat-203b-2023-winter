@@ -31,7 +31,6 @@ Load database libraries and the tidyverse frontend:
 
 ```{r}
 #| eval: false
-
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(tidymodels))
 suppressPackageStartupMessages(library(lubridate))
@@ -52,9 +51,9 @@ load necessary library
 ```{r}
 library(GGally)
 library(gtsummary)
-library(tidyverse)
-library(tidymodels)
+library(ranger)
 library(glmnet)
+library(xgboost)
 ```
 
 import the dataset
@@ -125,7 +124,7 @@ qualitative data.
 Based on the resulf of the table, none of these variables have a lot of NA
 so we don't need to we further eliminate some variables that have many unknowns.
 
-
+#1 Linear regresion
 ```{r}
 set.seed(203)
 
@@ -145,7 +144,7 @@ dim(ICU_test)
 ```
 
 
- create the Recipe
+create the Recipe for ogistic reegression
 
 ```{r}
 logit_recipe <- 
@@ -215,6 +214,7 @@ logit_fit <- logit_wf %>%
     )
 logit_fit
 ```
+
 ```{r}
 logit_fit %>%
   collect_metrics() %>%
@@ -242,6 +242,228 @@ final_wf <- logit_wf %>%
 final_wf
 ```
 
+```{r}
+final_fit <- 
+  final_wf %>%
+  last_fit(data_split)
+final_fit
+```
+
+```{r}
+final_fit %>% 
+  collect_metrics()
+```
+
+#2. Random Forest
+```{r}
+rf_recipe <- 
+  recipe(
+    day30mort ~ ., 
+    data = ICU_other
+  ) %>%
+  # mean and mode imputation 
+  step_impute_mode( marital_status, ethnicity) %>%
+  step_impute_mean("Sodium", "Glucose", "Chloride", "Potassium", "Creatinine", 
+ "Hematocrit", "Bicarbonate", "White_Blood_Cells", "Temperature_Fahrenheit", 
+ "Non_Invasive_Blood_Pressure_systolic", "Non_Invasive_Blood_Pressure_mean", 
+ "Respiratory_Rate", "Heart_Rate" ) %>%
+  # create traditional dummy variables
+  step_dummy(all_nominal_predictors()) %>%
+  # zero-variance filter
+  step_zv(all_numeric_predictors()) %>% 
+  # center and scale numeric data
+  #step_normalize(all_numeric_predictors()) %>%
+  # estimate the means and standard deviations
+  prep(training = ICU_other, retain = TRUE)
+rf_recipe
+```
+
+```{r}
+rf_mod <- 
+  rand_forest(
+    mode = "classification",
+    # Number of predictors randomly sampled in each split
+    mtry = tune(),
+    # Number of trees in ensemble
+    trees = tune()
+  ) %>% 
+  set_engine("ranger")
+rf_mod
+```
+
+```{r}
+rf_wf <- workflow() %>%
+  add_recipe(rf_recipe) %>%
+  add_model(rf_mod)
+rf_wf
+```
+```{r}
+param_grid <- grid_regular(
+  trees(range = c(100L, 300L)), 
+  mtry(range = c(1L, 5L)),
+  levels = c(3, 5)
+  )
+param_grid
+```
+```{r}
+set.seed(203)
+
+folds <- vfold_cv(ICU_other, v = 5)
+folds
+```
+
+```{r}
+rf_fit <- rf_wf %>%
+  tune_grid(
+    resamples = folds,
+    grid = param_grid,
+    metrics = metric_set(roc_auc, accuracy)
+    )
+rf_fit
+```
+```{r}
+rf_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "roc_auc") %>%
+  ggplot(mapping = aes(x = trees, y = mean, color = mtry)) +
+  geom_point() + 
+  # geom_line() + 
+  labs(x = "Num. of Trees", y = "CV AUC")
+```
+Show the top 5 models.
+```{r}
+rf_fit %>%
+  show_best("roc_auc")
+```
+
+Let’s select the best model.
+```{r}
+best_rf <- rf_fit %>%
+  select_best("roc_auc")
+best_rf
+```
+
+```{r}
+# Final workflow
+final_wf <- rf_wf %>%
+  finalize_workflow(best_rf)
+final_wf
+```
+```{r}
+# Fit the whole training set, then predict the test cases
+final_fit <- 
+  final_wf %>%
+  last_fit(data_split)
+final_fit
+```
+
+```{r}
+# Test metrics
+final_fit %>% 
+  collect_metrics()
+```
+
+#3 XGBooST
+
+
+Create recipe for the xgboost
+```{r}
+gb_recipe <- 
+  recipe(
+    day30mort ~ ., 
+    data = ICU_other
+  ) %>%
+  # mean and mode imputation 
+  step_impute_mode( marital_status, ethnicity) %>%
+  step_impute_mean("Sodium", "Glucose", "Chloride", "Potassium", "Creatinine", 
+ "Hematocrit", "Bicarbonate", "White_Blood_Cells", "Temperature_Fahrenheit", 
+ "Non_Invasive_Blood_Pressure_systolic", "Non_Invasive_Blood_Pressure_mean", 
+ "Respiratory_Rate", "Heart_Rate" ) %>%
+  # create traditional dummy variables
+  step_dummy(all_nominal_predictors()) %>%
+  # zero-variance filter
+  step_zv(all_numeric_predictors()) %>% 
+  # center and scale numeric data
+  #step_normalize(all_numeric_predictors()) %>%
+  # estimate the means and standard deviations
+  prep(training = ICU_other, retain = TRUE)
+gb_recipe
+```
+```{r}
+gb_mod <- 
+  boost_tree(
+    mode = "classification",
+    trees = 1000, 
+    tree_depth = tune(),
+    learn_rate = tune()
+  ) %>% 
+  set_engine("xgboost")
+gb_mod
+```
+
+```{r}
+gb_wf <- workflow() %>%
+  add_recipe(gb_recipe) %>%
+  add_model(gb_mod)
+gb_wf
+```
+
+```{r}
+param_grid <- grid_regular(
+  tree_depth(range = c(1L, 3L)),
+  learn_rate(range = c(-5, 2), trans = log10_trans()),
+  levels = c(3, 10)
+  )
+param_grid
+```
+Set cross-validation partitions.
+
+```{r}
+set.seed(203)
+
+folds <- vfold_cv(ICU_other, v = 5)
+folds
+```
+
+```{r}
+gb_fit <- gb_wf %>%
+  tune_grid(
+    resamples = folds,
+    grid = param_grid,
+    metrics = metric_set(roc_auc, accuracy)
+    )
+gb_fit
+```
+
+Visualize CV results:
+```{r}
+gb_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "roc_auc") %>%
+  ggplot(mapping = aes(x = learn_rate, y = mean, color = tree_depth)) +
+  geom_point() +
+  labs(x = "Learning Rate", y = "CV AUC") +
+  scale_x_log10()
+```
+```{r}
+gb_fit %>%
+  show_best("roc_auc")
+```
+
+```{r}
+best_gb <- gb_fit %>%
+  select_best("roc_auc")
+best_gb
+```
+
+```{r}
+# Final workflow
+final_wf <- gb_wf %>%
+  finalize_workflow(best_gb)
+final_wf
+```
 ```{r}
 final_fit <- 
   final_wf %>%
