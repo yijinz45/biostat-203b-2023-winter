@@ -1,0 +1,256 @@
+---
+title: "Biostat 203B Homework 4"
+subtitle: Due Mar 24 @ 11:59PM
+author: Zoe and 106070449
+format:
+  html:
+    theme: cosmo
+    embed-resources: true
+    number-sections: true
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    code-fold: false
+knitr:
+  opts_chunk: 
+    cache: false    
+    echo: true
+    fig.align: 'center'
+    fig.width: 6
+    fig.height: 4
+    message: FALSE
+---
+
+Display machine information:
+
+```{r}
+sessionInfo()
+```
+
+Load database libraries and the tidyverse frontend:
+
+```{r}
+#| eval: false
+
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(tidymodels))
+suppressPackageStartupMessages(library(lubridate))
+```
+
+## Predicting 30-day mortality
+
+Using the ICU cohort `icu_cohort.rds` you built in Homework 3, develop at least three analytic approaches for predicting the 30-day mortality of patients admitted to ICU using demographic information (gender, age, marital status, ethnicity), first lab measurements during ICU stay, and first vital measurements during ICU stay. For example, you can use (1) logistic regression with elastic net (lasso + ridge) penalty (e.g., glmnet or keras package), (2) random forest, (3) boosting, and (4) support vector machines, or (5) MLP neural network (keras package)
+
+1.  Partition data into 50% training set and 50% test set. Stratify partitioning according the 30-day mortality status.
+
+2.  Train and tune the models using the training set.
+
+3.  Compare model classification performance on the test set. Report both the area under ROC curve and accuracy for each model.
+
+load necessary library
+
+```{r}
+library(GGally)
+library(gtsummary)
+library(tidyverse)
+library(tidymodels)
+library(glmnet)
+```
+
+import the dataset
+
+**Data Cleaning :**  I only keep some of the intersting variables in the final 
+dataset before we split into test and train datasets. 
+```{r}
+icu_cohort <-read_rds("icu_cohort.rds") %>%
+  # first column is patient ID, which we don't need
+  select(day30mort, marital_status, ethnicity, gender, 
+         #start of the quantitative variables
+  Sodium, Glucose, Chloride, Potassium, Creatinine, Hematocrit, Bicarbonate, 
+  White_Blood_Cells, Temperature_Fahrenheit, 
+  Non_Invasive_Blood_Pressure_systolic, 
+  Non_Invasive_Blood_Pressure_mean, 
+  Respiratory_Rate, 
+  Heart_Rate, 
+  age_at_admission) %>%
+  
+  print(width = Inf)
+
+```
+
+
+We are here to deal with the unusual Fahrenheit in the degrees.
+All degrees between 45 and 90 will be considered typo and switch to NA since 
+normal humans won't have deegress in this range no matter it is C or F.
+Temperature lower than 32 will also be deleted since it is also not a human
+temperature.  Temperature beetween 34 to 45 will be converted into Fahrenheit. 
+
+```{r}
+icu_cohort$Temperature_Fahrenheit[icu_cohort$Temperature_Fahrenheit <= 34 
+                            & !is.na(icu_cohort$Temperature_Fahrenheit)] <- NA
+icu_cohort$Temperature_Fahrenheit[icu_cohort$Temperature_Fahrenheit > 45 
+                                & icu_cohort$Temperature_Fahrenheit < 90 
+                            & !is.na(icu_cohort$Temperature_Fahrenheit)] <- NA
+icu_cohort$Temperature_Fahrenheit[icu_cohort$Temperature_Fahrenheit > 34 
+                                & icu_cohort$Temperature_Fahrenheit <= 45 & 
+                                 !is.na(icu_cohort$Temperature_Fahrenheit)] <- 
+icu_cohort$Temperature_Fahrenheit * 9 / 5 + 32
+icu_cohort$Temperature_Fahrenheit[icu_cohort$Temperature_Fahrenheit >= 115 
+                            & !is.na(icu_cohort$Temperature_Fahrenheit)] <- NA
+```
+
+
+
+Change the 'UNKNOWN' in ethnicity into NA
+```{r}
+icu_cohort$ethnicity[icu_cohort$ethnicity == 'UNKNOWN'] <- NA
+icu_cohort$day30mort = as.factor(icu_cohort$day30mort)   
+```
+
+```{r}
+icu_cohort %>% tbl_summary(by = day30mort)
+```
+
+
+
+
+find the columns with missing values for later process
+
+```{r}
+names(which(colSums(is.na(icu_cohort)) > 0))
+```
+
+split the data for the rceipt, we use median for quantitative data and mode for 
+qualitative data. 
+Based on the resulf of the table, none of these variables have a lot of NA
+so we don't need to we further eliminate some variables that have many unknowns.
+
+
+```{r}
+set.seed(203)
+
+data_split <- initial_split(
+  icu_cohort,
+  # stratify by AHD
+  strata = "day30mort", 
+  prop = 0.5
+  )
+data_split
+
+ICU_other <- training(data_split)
+dim(ICU_other)
+
+ICU_test <- testing(data_split)
+dim(ICU_test)
+```
+
+
+ create the Recipe
+
+```{r}
+logit_recipe <- 
+  recipe(
+    day30mort ~ ., 
+    data = ICU_other
+  ) %>%
+  # mean and mode imputation 
+  step_impute_mode( marital_status, ethnicity) %>%
+  step_impute_mean("Sodium", "Glucose", "Chloride", "Potassium", "Creatinine", 
+ "Hematocrit", "Bicarbonate", "White_Blood_Cells", "Temperature_Fahrenheit", 
+ "Non_Invasive_Blood_Pressure_systolic", "Non_Invasive_Blood_Pressure_mean", 
+ "Respiratory_Rate", "Heart_Rate" ) %>%
+  # create traditional dummy variables
+  step_dummy(all_nominal_predictors()) %>%
+  # zero-variance filter
+  step_zv(all_numeric_predictors()) %>% 
+  # center and scale numeric data
+  step_normalize(all_numeric_predictors()) %>%
+  # estimate the means and standard deviations
+  prep(training = ICU_other, retain = TRUE)
+logit_recipe
+```
+
+create the model
+
+```{r}
+logit_mod <- 
+  logistic_reg(
+    penalty = tune(), 
+    mixture = tune()
+  ) %>% 
+  set_engine("glmnet", standardize = FALSE)
+logit_mod
+```
+
+```{r}
+logit_wf <- workflow() %>%
+  add_recipe(logit_recipe) %>%
+  add_model(logit_mod)
+logit_wf
+```
+
+
+```{r}
+param_grid <- grid_regular(
+  penalty(range = c(-6, 3)), 
+  mixture(),
+  levels = c(100, 5)
+  )
+param_grid
+```
+
+```{r}
+set.seed(203)
+
+folds <- vfold_cv(ICU_other, v = 5)
+folds
+```
+Fit cross-validation.
+```{r}
+logit_fit <- logit_wf %>%
+  tune_grid(
+    resamples = folds,
+    grid = param_grid,
+    metrics = metric_set(roc_auc, accuracy)
+    )
+logit_fit
+```
+```{r}
+logit_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "roc_auc") %>%
+  ggplot(mapping = aes(x = penalty, y = mean, color = mixture)) +
+  geom_point() +
+  labs(x = "Penalty", y = "CV AUC") +
+scale_x_log10()
+```
+```{r}
+logit_fit %>%
+  show_best("roc_auc")
+```
+
+```{r}
+best_logit <- logit_fit %>%
+  select_best("roc_auc")
+best_logit
+```
+
+```{r}
+final_wf <- logit_wf %>%
+  finalize_workflow(best_logit)
+final_wf
+```
+
+```{r}
+final_fit <- 
+  final_wf %>%
+  last_fit(data_split)
+final_fit
+```
+
+```{r}
+final_fit %>% 
+  collect_metrics()
+```
+
