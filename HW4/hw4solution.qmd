@@ -30,7 +30,7 @@ sessionInfo()
 Load database libraries and the tidyverse frontend:
 
 ```{r}
-#| eval: false
+#| eval: true
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(tidymodels))
 suppressPackageStartupMessages(library(lubridate))
@@ -51,9 +51,13 @@ load necessary library
 ```{r}
 library(GGally)
 library(gtsummary)
+library(tidyverse)
+library(tidymodels)
 library(ranger)
 library(glmnet)
 library(xgboost)
+library(readr)
+
 ```
 
 import the dataset
@@ -61,7 +65,7 @@ import the dataset
 **Data Cleaning :**  I only keep some of the intersting variables in the final 
 dataset before we split into test and train datasets. 
 ```{r}
-icu_cohort <-read_rds("icu_cohort.rds") %>%
+icu_cohort <- read_rds("icu_cohort.rds") %>%
   # first column is patient ID, which we don't need
   select(day30mort, marital_status, ethnicity, gender, 
          #start of the quantitative variables
@@ -72,12 +76,11 @@ icu_cohort <-read_rds("icu_cohort.rds") %>%
   Respiratory_Rate, 
   Heart_Rate, 
   age_at_admission) %>%
-  
   print(width = Inf)
 
 ```
 
-
+**Clean and recalculate for normal Temperature**
 We are here to deal with the unusual Fahrenheit in the degrees.
 All degrees between 45 and 90 will be considered typo and switch to NA since 
 normal humans won't have deegress in this range no matter it is C or F.
@@ -105,7 +108,7 @@ Change the 'UNKNOWN' in ethnicity into NA
 icu_cohort$ethnicity[icu_cohort$ethnicity == 'UNKNOWN'] <- NA
 icu_cohort$day30mort = as.factor(icu_cohort$day30mort)   
 ```
-
+Plot the summary graph and see the dirtribution of death and survive
 ```{r}
 icu_cohort %>% tbl_summary(by = day30mort)
 ```
@@ -144,8 +147,7 @@ dim(ICU_test)
 ```
 
 
-create the Recipe for ogistic reegression
-
+Create the Recipe for logistic regression. 
 ```{r}
 logit_recipe <- 
   recipe(
@@ -169,8 +171,7 @@ logit_recipe <-
 logit_recipe
 ```
 
-create the model
-
+Create the model for logistic regression
 ```{r}
 logit_mod <- 
   logistic_reg(
@@ -180,7 +181,7 @@ logit_mod <-
   set_engine("glmnet", standardize = FALSE)
 logit_mod
 ```
-
+workflow
 ```{r}
 logit_wf <- workflow() %>%
   add_recipe(logit_recipe) %>%
@@ -188,7 +189,7 @@ logit_wf <- workflow() %>%
 logit_wf
 ```
 
-
+create grid
 ```{r}
 param_grid <- grid_regular(
   penalty(range = c(-6, 3)), 
@@ -197,7 +198,7 @@ param_grid <- grid_regular(
   )
 param_grid
 ```
-
+seperate by folds
 ```{r}
 set.seed(203)
 
@@ -215,6 +216,7 @@ logit_fit <- logit_wf %>%
 logit_fit
 ```
 
+show the result of the fit
 ```{r}
 logit_fit %>%
   collect_metrics() %>%
@@ -225,23 +227,25 @@ logit_fit %>%
   labs(x = "Penalty", y = "CV AUC") +
 scale_x_log10()
 ```
+
+show roc and auc
 ```{r}
 logit_fit %>%
   show_best("roc_auc")
 ```
-
+select the best subset
 ```{r}
 best_logit <- logit_fit %>%
   select_best("roc_auc")
 best_logit
 ```
-
+finalize the workflow
 ```{r}
 final_wf <- logit_wf %>%
   finalize_workflow(best_logit)
 final_wf
 ```
-
+finalfit
 ```{r}
 final_fit <- 
   final_wf %>%
@@ -249,6 +253,7 @@ final_fit <-
 final_fit
 ```
 
+output
 ```{r}
 final_fit %>% 
   collect_metrics()
@@ -277,7 +282,7 @@ rf_recipe <-
   prep(training = ICU_other, retain = TRUE)
 rf_recipe
 ```
-
+mod
 ```{r}
 rf_mod <- 
   rand_forest(
@@ -290,13 +295,14 @@ rf_mod <-
   set_engine("ranger")
 rf_mod
 ```
-
+workflow
 ```{r}
 rf_wf <- workflow() %>%
   add_recipe(rf_recipe) %>%
   add_model(rf_mod)
 rf_wf
 ```
+create grid
 ```{r}
 param_grid <- grid_regular(
   trees(range = c(100L, 300L)), 
@@ -305,13 +311,14 @@ param_grid <- grid_regular(
   )
 param_grid
 ```
+create 5 folds for the forest 
 ```{r}
 set.seed(203)
 
 folds <- vfold_cv(ICU_other, v = 5)
 folds
 ```
-
+fit
 ```{r}
 rf_fit <- rf_wf %>%
   tune_grid(
@@ -321,6 +328,8 @@ rf_fit <- rf_wf %>%
     )
 rf_fit
 ```
+
+plot the result
 ```{r}
 rf_fit %>%
   collect_metrics() %>%
@@ -343,13 +352,16 @@ best_rf <- rf_fit %>%
   select_best("roc_auc")
 best_rf
 ```
-
+finalize the workflow
 ```{r}
 # Final workflow
 final_wf <- rf_wf %>%
   finalize_workflow(best_rf)
 final_wf
 ```
+
+
+Finally fit the data
 ```{r}
 # Fit the whole training set, then predict the test cases
 final_fit <- 
@@ -358,6 +370,9 @@ final_fit <-
 final_fit
 ```
 
+
+
+Show the final result
 ```{r}
 # Test metrics
 final_fit %>% 
@@ -390,6 +405,7 @@ gb_recipe <-
   prep(training = ICU_other, retain = TRUE)
 gb_recipe
 ```
+create mode
 ```{r}
 gb_mod <- 
   boost_tree(
@@ -401,7 +417,7 @@ gb_mod <-
   set_engine("xgboost")
 gb_mod
 ```
-
+workflow
 ```{r}
 gb_wf <- workflow() %>%
   add_recipe(gb_recipe) %>%
@@ -409,6 +425,7 @@ gb_wf <- workflow() %>%
 gb_wf
 ```
 
+Create grid
 ```{r}
 param_grid <- grid_regular(
   tree_depth(range = c(1L, 3L)),
@@ -417,8 +434,8 @@ param_grid <- grid_regular(
   )
 param_grid
 ```
-Set cross-validation partitions.
 
+Set cross-validation partitions.
 ```{r}
 set.seed(203)
 
@@ -426,6 +443,7 @@ folds <- vfold_cv(ICU_other, v = 5)
 folds
 ```
 
+Final fit
 ```{r}
 gb_fit <- gb_wf %>%
   tune_grid(
@@ -447,32 +465,51 @@ gb_fit %>%
   labs(x = "Learning Rate", y = "CV AUC") +
   scale_x_log10()
 ```
+
+Best fits
 ```{r}
 gb_fit %>%
   show_best("roc_auc")
 ```
-
+Select the best fit
 ```{r}
 best_gb <- gb_fit %>%
   select_best("roc_auc")
 best_gb
 ```
-
+finalize the workflow
 ```{r}
 # Final workflow
 final_wf <- gb_wf %>%
   finalize_workflow(best_gb)
 final_wf
 ```
+
+Finally fit the data back. 
 ```{r}
 final_fit <- 
   final_wf %>%
   last_fit(data_split)
 final_fit
 ```
-
+Finally fit. 
 ```{r}
 final_fit %>% 
   collect_metrics()
 ```
 
+**Conclusion:**
+
+The accuracy for first model is : 0.9011101	
+The roc_auc for first model is :0.7577858
+
+The accuracy for second model is : 0.9055503
+The roc_auc for second model is : 0.8124993
+
+The accuracy for third model is :0.9084478
+The roc_auc for thirdmodel is :0.8214890	
+
+We can see that the roc_auc is highest for the boosting method and lowest
+for the logistic regression model. The accuracy for all three of these methods
+are almost the same around 0.9. This might caused by the low death percentage 
+in the outcome. 
