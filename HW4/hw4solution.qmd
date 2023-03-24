@@ -1,0 +1,515 @@
+---
+title: "Biostat 203B Homework 4"
+subtitle: Due Mar 24 @ 11:59PM
+author: Zoe and 106070449
+format:
+  html:
+    theme: cosmo
+    embed-resources: true
+    number-sections: true
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    code-fold: false
+knitr:
+  opts_chunk: 
+    cache: false    
+    echo: true
+    fig.align: 'center'
+    fig.width: 6
+    fig.height: 4
+    message: FALSE
+---
+
+Display machine information:
+
+```{r}
+sessionInfo()
+```
+
+Load database libraries and the tidyverse frontend:
+
+```{r}
+#| eval: true
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(tidymodels))
+suppressPackageStartupMessages(library(lubridate))
+```
+
+## Predicting 30-day mortality
+
+Using the ICU cohort `icu_cohort.rds` you built in Homework 3, develop at least three analytic approaches for predicting the 30-day mortality of patients admitted to ICU using demographic information (gender, age, marital status, ethnicity), first lab measurements during ICU stay, and first vital measurements during ICU stay. For example, you can use (1) logistic regression with elastic net (lasso + ridge) penalty (e.g., glmnet or keras package), (2) random forest, (3) boosting, and (4) support vector machines, or (5) MLP neural network (keras package)
+
+1.  Partition data into 50% training set and 50% test set. Stratify partitioning according the 30-day mortality status.
+
+2.  Train and tune the models using the training set.
+
+3.  Compare model classification performance on the test set. Report both the area under ROC curve and accuracy for each model.
+
+load necessary library
+
+```{r}
+library(GGally)
+library(gtsummary)
+library(tidyverse)
+library(tidymodels)
+library(ranger)
+library(glmnet)
+library(xgboost)
+library(readr)
+
+```
+
+import the dataset
+
+**Data Cleaning :**  I only keep some of the intersting variables in the final 
+dataset before we split into test and train datasets. 
+```{r}
+icu_cohort <- read_rds("icu_cohort.rds") %>%
+  # first column is patient ID, which we don't need
+  select(day30mort, marital_status, ethnicity, gender, 
+         #start of the quantitative variables
+  Sodium, Glucose, Chloride, Potassium, Creatinine, Hematocrit, Bicarbonate, 
+  White_Blood_Cells, Temperature_Fahrenheit, 
+  Non_Invasive_Blood_Pressure_systolic, 
+  Non_Invasive_Blood_Pressure_mean, 
+  Respiratory_Rate, 
+  Heart_Rate, 
+  age_at_admission) %>%
+  print(width = Inf)
+
+```
+
+**Clean and recalculate for normal Temperature**
+We are here to deal with the unusual Fahrenheit in the degrees.
+All degrees between 45 and 90 will be considered typo and switch to NA since 
+normal humans won't have deegress in this range no matter it is C or F.
+Temperature lower than 32 will also be deleted since it is also not a human
+temperature.  Temperature beetween 34 to 45 will be converted into Fahrenheit. 
+
+```{r}
+icu_cohort$Temperature_Fahrenheit[icu_cohort$Temperature_Fahrenheit <= 34 
+                            & !is.na(icu_cohort$Temperature_Fahrenheit)] <- NA
+icu_cohort$Temperature_Fahrenheit[icu_cohort$Temperature_Fahrenheit > 45 
+                                & icu_cohort$Temperature_Fahrenheit < 90 
+                            & !is.na(icu_cohort$Temperature_Fahrenheit)] <- NA
+icu_cohort$Temperature_Fahrenheit[icu_cohort$Temperature_Fahrenheit > 34 
+                                & icu_cohort$Temperature_Fahrenheit <= 45 & 
+                                 !is.na(icu_cohort$Temperature_Fahrenheit)] <- 
+icu_cohort$Temperature_Fahrenheit * 9 / 5 + 32
+icu_cohort$Temperature_Fahrenheit[icu_cohort$Temperature_Fahrenheit >= 115 
+                            & !is.na(icu_cohort$Temperature_Fahrenheit)] <- NA
+```
+
+
+
+Change the 'UNKNOWN' in ethnicity into NA
+```{r}
+icu_cohort$ethnicity[icu_cohort$ethnicity == 'UNKNOWN'] <- NA
+icu_cohort$day30mort = as.factor(icu_cohort$day30mort)   
+```
+Plot the summary graph and see the dirtribution of death and survive
+```{r}
+icu_cohort %>% tbl_summary(by = day30mort)
+```
+
+
+
+
+find the columns with missing values for later process
+
+```{r}
+names(which(colSums(is.na(icu_cohort)) > 0))
+```
+
+split the data for the rceipt, we use median for quantitative data and mode for 
+qualitative data. 
+Based on the resulf of the table, none of these variables have a lot of NA
+so we don't need to we further eliminate some variables that have many unknowns.
+
+#1 Linear regresion
+```{r}
+set.seed(203)
+
+data_split <- initial_split(
+  icu_cohort,
+  # stratify by AHD
+  strata = "day30mort", 
+  prop = 0.5
+  )
+data_split
+
+ICU_other <- training(data_split)
+dim(ICU_other)
+
+ICU_test <- testing(data_split)
+dim(ICU_test)
+```
+
+
+Create the Recipe for logistic regression. 
+```{r}
+logit_recipe <- 
+  recipe(
+    day30mort ~ ., 
+    data = ICU_other
+  ) %>%
+  # mean and mode imputation 
+  step_impute_mode( marital_status, ethnicity) %>%
+  step_impute_mean("Sodium", "Glucose", "Chloride", "Potassium", "Creatinine", 
+ "Hematocrit", "Bicarbonate", "White_Blood_Cells", "Temperature_Fahrenheit", 
+ "Non_Invasive_Blood_Pressure_systolic", "Non_Invasive_Blood_Pressure_mean", 
+ "Respiratory_Rate", "Heart_Rate" ) %>%
+  # create traditional dummy variables
+  step_dummy(all_nominal_predictors()) %>%
+  # zero-variance filter
+  step_zv(all_numeric_predictors()) %>% 
+  # center and scale numeric data
+  step_normalize(all_numeric_predictors()) %>%
+  # estimate the means and standard deviations
+  prep(training = ICU_other, retain = TRUE)
+logit_recipe
+```
+
+Create the model for logistic regression
+```{r}
+logit_mod <- 
+  logistic_reg(
+    penalty = tune(), 
+    mixture = tune()
+  ) %>% 
+  set_engine("glmnet", standardize = FALSE)
+logit_mod
+```
+workflow
+```{r}
+logit_wf <- workflow() %>%
+  add_recipe(logit_recipe) %>%
+  add_model(logit_mod)
+logit_wf
+```
+
+create grid
+```{r}
+param_grid <- grid_regular(
+  penalty(range = c(-6, 3)), 
+  mixture(),
+  levels = c(100, 5)
+  )
+param_grid
+```
+seperate by folds
+```{r}
+set.seed(203)
+
+folds <- vfold_cv(ICU_other, v = 5)
+folds
+```
+Fit cross-validation.
+```{r}
+logit_fit <- logit_wf %>%
+  tune_grid(
+    resamples = folds,
+    grid = param_grid,
+    metrics = metric_set(roc_auc, accuracy)
+    )
+logit_fit
+```
+
+show the result of the fit
+```{r}
+logit_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "roc_auc") %>%
+  ggplot(mapping = aes(x = penalty, y = mean, color = mixture)) +
+  geom_point() +
+  labs(x = "Penalty", y = "CV AUC") +
+scale_x_log10()
+```
+
+show roc and auc
+```{r}
+logit_fit %>%
+  show_best("roc_auc")
+```
+select the best subset
+```{r}
+best_logit <- logit_fit %>%
+  select_best("roc_auc")
+best_logit
+```
+finalize the workflow
+```{r}
+final_wf <- logit_wf %>%
+  finalize_workflow(best_logit)
+final_wf
+```
+finalfit
+```{r}
+final_fit <- 
+  final_wf %>%
+  last_fit(data_split)
+final_fit
+```
+
+output
+```{r}
+final_fit %>% 
+  collect_metrics()
+```
+
+#2. Random Forest
+```{r}
+rf_recipe <- 
+  recipe(
+    day30mort ~ ., 
+    data = ICU_other
+  ) %>%
+  # mean and mode imputation 
+  step_impute_mode( marital_status, ethnicity) %>%
+  step_impute_mean("Sodium", "Glucose", "Chloride", "Potassium", "Creatinine", 
+ "Hematocrit", "Bicarbonate", "White_Blood_Cells", "Temperature_Fahrenheit", 
+ "Non_Invasive_Blood_Pressure_systolic", "Non_Invasive_Blood_Pressure_mean", 
+ "Respiratory_Rate", "Heart_Rate" ) %>%
+  # create traditional dummy variables
+  step_dummy(all_nominal_predictors()) %>%
+  # zero-variance filter
+  step_zv(all_numeric_predictors()) %>% 
+  # center and scale numeric data
+  #step_normalize(all_numeric_predictors()) %>%
+  # estimate the means and standard deviations
+  prep(training = ICU_other, retain = TRUE)
+rf_recipe
+```
+mod
+```{r}
+rf_mod <- 
+  rand_forest(
+    mode = "classification",
+    # Number of predictors randomly sampled in each split
+    mtry = tune(),
+    # Number of trees in ensemble
+    trees = tune()
+  ) %>% 
+  set_engine("ranger")
+rf_mod
+```
+workflow
+```{r}
+rf_wf <- workflow() %>%
+  add_recipe(rf_recipe) %>%
+  add_model(rf_mod)
+rf_wf
+```
+create grid
+```{r}
+param_grid <- grid_regular(
+  trees(range = c(100L, 300L)), 
+  mtry(range = c(1L, 5L)),
+  levels = c(3, 5)
+  )
+param_grid
+```
+create 5 folds for the forest 
+```{r}
+set.seed(203)
+
+folds <- vfold_cv(ICU_other, v = 5)
+folds
+```
+fit
+```{r}
+rf_fit <- rf_wf %>%
+  tune_grid(
+    resamples = folds,
+    grid = param_grid,
+    metrics = metric_set(roc_auc, accuracy)
+    )
+rf_fit
+```
+
+plot the result
+```{r}
+rf_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "roc_auc") %>%
+  ggplot(mapping = aes(x = trees, y = mean, color = mtry)) +
+  geom_point() + 
+  # geom_line() + 
+  labs(x = "Num. of Trees", y = "CV AUC")
+```
+Show the top 5 models.
+```{r}
+rf_fit %>%
+  show_best("roc_auc")
+```
+
+Let’s select the best model.
+```{r}
+best_rf <- rf_fit %>%
+  select_best("roc_auc")
+best_rf
+```
+finalize the workflow
+```{r}
+# Final workflow
+final_wf <- rf_wf %>%
+  finalize_workflow(best_rf)
+final_wf
+```
+
+
+Finally fit the data
+```{r}
+# Fit the whole training set, then predict the test cases
+final_fit <- 
+  final_wf %>%
+  last_fit(data_split)
+final_fit
+```
+
+
+
+Show the final result
+```{r}
+# Test metrics
+final_fit %>% 
+  collect_metrics()
+```
+
+#3 XGBooST
+
+
+Create recipe for the xgboost
+```{r}
+gb_recipe <- 
+  recipe(
+    day30mort ~ ., 
+    data = ICU_other
+  ) %>%
+  # mean and mode imputation 
+  step_impute_mode( marital_status, ethnicity) %>%
+  step_impute_mean("Sodium", "Glucose", "Chloride", "Potassium", "Creatinine", 
+ "Hematocrit", "Bicarbonate", "White_Blood_Cells", "Temperature_Fahrenheit", 
+ "Non_Invasive_Blood_Pressure_systolic", "Non_Invasive_Blood_Pressure_mean", 
+ "Respiratory_Rate", "Heart_Rate" ) %>%
+  # create traditional dummy variables
+  step_dummy(all_nominal_predictors()) %>%
+  # zero-variance filter
+  step_zv(all_numeric_predictors()) %>% 
+  # center and scale numeric data
+  #step_normalize(all_numeric_predictors()) %>%
+  # estimate the means and standard deviations
+  prep(training = ICU_other, retain = TRUE)
+gb_recipe
+```
+create mode
+```{r}
+gb_mod <- 
+  boost_tree(
+    mode = "classification",
+    trees = 1000, 
+    tree_depth = tune(),
+    learn_rate = tune()
+  ) %>% 
+  set_engine("xgboost")
+gb_mod
+```
+workflow
+```{r}
+gb_wf <- workflow() %>%
+  add_recipe(gb_recipe) %>%
+  add_model(gb_mod)
+gb_wf
+```
+
+Create grid
+```{r}
+param_grid <- grid_regular(
+  tree_depth(range = c(1L, 3L)),
+  learn_rate(range = c(-5, 2), trans = log10_trans()),
+  levels = c(3, 10)
+  )
+param_grid
+```
+
+Set cross-validation partitions.
+```{r}
+set.seed(203)
+
+folds <- vfold_cv(ICU_other, v = 5)
+folds
+```
+
+Final fit
+```{r}
+gb_fit <- gb_wf %>%
+  tune_grid(
+    resamples = folds,
+    grid = param_grid,
+    metrics = metric_set(roc_auc, accuracy)
+    )
+gb_fit
+```
+
+Visualize CV results:
+```{r}
+gb_fit %>%
+  collect_metrics() %>%
+  print(width = Inf) %>%
+  filter(.metric == "roc_auc") %>%
+  ggplot(mapping = aes(x = learn_rate, y = mean, color = tree_depth)) +
+  geom_point() +
+  labs(x = "Learning Rate", y = "CV AUC") +
+  scale_x_log10()
+```
+
+Best fits
+```{r}
+gb_fit %>%
+  show_best("roc_auc")
+```
+Select the best fit
+```{r}
+best_gb <- gb_fit %>%
+  select_best("roc_auc")
+best_gb
+```
+finalize the workflow
+```{r}
+# Final workflow
+final_wf <- gb_wf %>%
+  finalize_workflow(best_gb)
+final_wf
+```
+
+Finally fit the data back. 
+```{r}
+final_fit <- 
+  final_wf %>%
+  last_fit(data_split)
+final_fit
+```
+Finally fit. 
+```{r}
+final_fit %>% 
+  collect_metrics()
+```
+
+**Conclusion:**
+
+The accuracy for first model is : 0.9011101	
+The roc_auc for first model is :0.7577858
+
+The accuracy for second model is : 0.9055503
+The roc_auc for second model is : 0.8124993
+
+The accuracy for third model is :0.9084478
+The roc_auc for thirdmodel is :0.8214890	
+
+We can see that the roc_auc is highest for the boosting method and lowest
+for the logistic regression model. The accuracy for all three of these methods
+are almost the same around 0.9. This might caused by the low death percentage 
+in the outcome. 
